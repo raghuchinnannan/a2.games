@@ -4,7 +4,7 @@ a2.games is a free opensource gaming website by [Raghu Chinnannan](https://raghu
 
 Primarily built as a fun project to engage my kids by showing their faces on the games and also as an oppurtunity to learn KaboomJS.
 
-Luckily, I was able to get this cool domain for about ~₹1200 (~$15) and it's live, that's the origin story.
+Luckily, I was able to get this cool domain for about ₹1200 (~$15) and it's live, that's the origin story.
 
 ## Usage
 - It's completely free to play.
