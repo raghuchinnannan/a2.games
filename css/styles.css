@@ -1,0 +1,68 @@
+.logo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+    max-width: 300px;
+}
+
+.green {
+    color: #00FF00;
+}
+
+.center {
+    text-align: center;
+}
+
+.games {
+    font-size: x-large;
+    font-style: unset;
+    font-weight: 1000;
+}
+
+.games a {
+    text-decoration: none;
+    color: #00FF00;
+    padding-bottom: 90px;
+}
+
+.games a::after {
+    content: "play";
+    font-size: xx-small;
+    color: #0FF;
+    position: relative;
+    top: -10px;
+    right: -2px;
+}
+
+.footer {
+    text-align: center;
+    position: fixed; /* Position the footer as fixed */
+    bottom: 0; /* Place it at the bottom of the viewport */
+    left: 0;
+    width: 100%; /* Make it span the full width */
+    background-color: #00FFFF;
+    color: #000;
+    padding: 10px 0; /* Add some padding for spacing */
+    font-size: 14px; /* Adjust the font size as needed */
+    z-index: 1; /* Ensure it's on top of other content */
+}
+
+.footer a {
+    color: unset;
+    text-decoration: none;
+    font-weight: 900;
+    border-bottom: 2px dotted; /* Add an underline on hover for the hyperlink */
+}
+
+.footer a:hover {
+    border-bottom: 2px dotted; /* Add an underline on hover for the hyperlink */
+}
+
+.footer a.external::after {
+    content: "↗";
+    color: #000;
+    position: relative;
+    top: -3px;
+    right: -2px;
+}

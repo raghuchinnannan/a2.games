@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://unpkg.com/kaboom@3000.0.1/dist/kaboom.js"></script>
+</head>
+
+<body>
+    <script type="module">
+
+        // import kaboom.js
+        import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
+
+        const FLOOR_HEIGHT = 48;
+        const JUMP_FORCE = 750;
+        const SPEED = 480;
+        var isDouble = 0;
+
+        // initialize context
+        kaboom({
+            background: [141, 183, 255],
+        });
+
+        // load assets
+        loadSprite("bean", "https://zerohero.pages.dev/sprites/bean-head.png");
+
+        loadSprite("bean-head", "https://zerohero.pages.dev/sprites/bean-head.png");
+
+
+
+        scene("game", () => {
+
+            // define gravity
+            setGravity(2000);
+
+            // add a game object to screen
+            const player = add([
+                // list of components
+                sprite("bean"),
+                pos(100, 40),
+                area(),
+                body(),
+            ]);
+
+            const game = add([
+                timer(),
+            ])
+
+            // floor
+            add([
+                rect(width(), FLOOR_HEIGHT),
+                outline(4),
+                pos(0, height()),
+                anchor("botleft"),
+                area(),
+                body({ isStatic: true }),
+                color(81, 54, 30),
+            ]);
+
+            function jump() {
+                player.jump(JUMP_FORCE);
+            }
+
+            // jump when user press space
+            onKeyPress("space", jump);
+            onClick(jump);
+
+
+            function spawnTree() {
+
+                // add tree obj
+                add([
+                    rect(96, rand(32, height()/2 - FLOOR_HEIGHT - 20)),
+                    area(),
+                    outline(4),
+                    pos(width(), height() - FLOOR_HEIGHT),
+                    anchor("botleft"),
+                    color(80, 180, 255),
+                    move(LEFT, SPEED),
+                    "tree",
+                ]);
+
+                add([ 
+                    rect(96, rand(32, height()/2 - FLOOR_HEIGHT- 20)),
+                    area(),
+                    outline(4),
+                    pos(width(), 0),
+                    anchor("topright"),
+                    color(80, 180, 255),
+                    move(LEFT, SPEED),
+                    "tree",
+                ]);
+
+                // wait a random amount of time to spawn next tree
+                wait(rand(0.5, 1.5), spawnTree);
+
+            }
+
+            // start spawning trees
+            spawnTree();
+
+            // lose if player collides with any game obj with tag "tree"
+            player.onCollide("tree", () => {
+                // go to "lose" scene and pass the score
+                go("lose", score);
+                burp();
+                addKaboom(player.pos);
+            });
+
+            // keep track of score
+            let score = 0;
+
+            const scoreLabel = add([
+                text(score),
+                pos(24, 24),
+            ]);
+
+            // increment score every frame
+            onUpdate(() => {
+                score++;
+                scoreLabel.text = score;
+            });
+
+        });
+
+        scene("lose", (score) => {
+
+            add([
+                sprite("bean-head"),
+                pos(width() / 2, height() / 2 - 80),
+                scale(1),
+                anchor("center"),
+            ]);
+
+            // display score
+            add([
+                text(score),
+                pos(width() / 2, height() / 2 + 80),
+                scale(2),
+                anchor("center"),
+            ]);
+
+            // go back to game with space is pressed
+            onKeyPress("space", () => go("game"));
+            onClick(() => go("game"));
+
+        });
+
+        go("game");
+
+    </script>
+</body>
+
+</html>
