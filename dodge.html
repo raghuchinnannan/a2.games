@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodge Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            border: 4px solid white;
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            height: auto;
+            background: #0f1017; /* Different background color for game area */
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .btn {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        .touch-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .touch-btn {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            background: #ff9800;
+            color: white;
+            font-size: 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #endScreen {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dodge Game</h1>
+    <p>Move left and right to avoid falling objects!</p>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="score">Score: 0</div>
+    <div class="touch-controls">
+        <button class="touch-btn" onclick="movePlayer(-20)">◀</button>
+        <button class="touch-btn" onclick="movePlayer(20)">▶</button>
+    </div>
+    <div id="endScreen">
+        <h2>Game Over</h2>
+        <p id="finalScore"></p>
+        <button class="btn" onclick="restartGame()">Restart</button>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        let player = { x: 180, y: 550, width: 40, height: 40 };
+        let obstacles = [];
+        let score = 0;
+        let gameRunning = true;
+
+        function drawPlayer() {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function getRandomColor() {
+            const colors = ["red", "green", "purple", "#f72702", "yellow", "#f70258", "#12b84c"]; // Avoid blue and background color
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
+
+        function updateObstacles() {
+            obstacles.forEach(obstacle => {
+                obstacle.y += 7;
+            });
+            obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
+            if (Math.random() < 0.08) {
+                obstacles.push({ 
+                    x: Math.random() * (canvas.width - 40), 
+                    y: 0, 
+                    width: 40, 
+                    height: 40, 
+                    color: getRandomColor() 
+                });
+            }
+        }
+
+        function checkCollision() {
+            for (let obstacle of obstacles) {
+                if (
+                    player.x < obstacle.x + obstacle.width &&
+                    player.x + player.width > obstacle.x &&
+                    player.y < obstacle.y + obstacle.height &&
+                    player.y + player.height > obstacle.y
+                ) {
+                    endGame();
+                    return;
+                }
+            }
+        }
+
+        function endGame() {
+            gameRunning = false;
+            document.getElementById("finalScore").innerText = `Final Score: ${score}`;
+            document.getElementById("endScreen").style.display = "block";
+        }
+
+        function restartGame() {
+            score = 0;
+            obstacles = [];
+            gameRunning = true;
+            document.getElementById("endScreen").style.display = "none";
+            gameLoop();
+        }
+
+        function movePlayer(distance) {
+            if (gameRunning) {
+                player.x = Math.max(0, Math.min(canvas.width - player.width, player.x + distance));
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawObstacles();
+            updateObstacles();
+            checkCollision();
+            score++;
+            document.getElementById("score").innerText = `Score: ${score}`;
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft") movePlayer(-20);
+            else if (e.key === "ArrowRight") movePlayer(20);
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>
