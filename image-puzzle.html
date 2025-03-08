@@ -1,26 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Puzzle</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; background-color: #f4f4f4; }
-        h1 { margin-top: 20px; color: #333; }
-        .container { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 20px; }
-        .puzzle-container { display: grid; grid-template-columns: repeat(3, 100px); gap: 2px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.2); }
-        .puzzle-piece { width: 100px; height: 100px; background-size: 300px 300px; cursor: grab; border: 1px solid #ddd; }
-        .reference-image { width: 300px; height: 300px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.2); }
-        .success-message { display: none; font-size: 22px; color: green; margin-top: 20px; font-weight: bold; }
-        .new-game-btn { margin-top: 20px; padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .new-game-btn:hover { background: #0056b3; }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 2px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            background-size: 300px 300px;
+            cursor: grab;
+            border: 1px solid #ddd;
+        }
+
+        .reference-image {
+            width: 300px;
+            height: 300px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .success-message {
+            display: none;
+            font-size: 22px;
+            color: green;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .new-game-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .new-game-btn:hover {
+            background: #0056b3;
+        }
+
+         /* Mobile specific styles */
+         @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .puzzle-container {
+                grid-template-columns: repeat(3, minmax(80px, 30vw));
+            }
+            .puzzle-piece {
+                height: 30vw;
+            }
+        }
     </style>
 </head>
+
 <body>
     <h1>Image Puzzle</h1>
     <div class="container">
-        <div class="puzzle-container" id="puzzle"></div>
         <img id="referenceImage" class="reference-image" alt="Reference Image">
+        <div class="puzzle-container" id="puzzle"></div>
     </div>
     <p class="success-message" id="successMessage">Congratulations! You solved the puzzle!</p>
     <button class="new-game-btn" onclick="startNewGame()">Start New Puzzle</button>
@@ -38,7 +111,7 @@
             'https://picsum.photos/id/659/800',
             'https://picsum.photos/id/91/800'
         ];
-        
+
         let imageUrl = '';
         const puzzleContainer = document.getElementById('puzzle');
         const successMessage = document.getElementById('successMessage');
@@ -61,11 +134,11 @@
                 piece.style.backgroundPosition = `-${(i % 3) * 100}px -${Math.floor(i / 3) * 100}px`;
                 piece.setAttribute('data-index', i);
                 piece.setAttribute('draggable', true);
-                
+
                 piece.addEventListener('dragstart', dragStart);
                 piece.addEventListener('dragover', dragOver);
                 piece.addEventListener('drop', drop);
-                
+
                 pieces.push(piece);
             }
             shuffle(pieces);
@@ -88,16 +161,16 @@
             if (event.target.classList.contains('puzzle-piece')) {
                 let draggedPos = [...puzzleContainer.children].indexOf(draggedPiece);
                 let targetPos = [...puzzleContainer.children].indexOf(event.target);
-                
+
                 puzzleContainer.insertBefore(draggedPiece, puzzleContainer.children[targetPos]);
                 puzzleContainer.insertBefore(event.target, puzzleContainer.children[draggedPos]);
-                
+
                 checkCompletion();
             }
         }
 
         function checkCompletion() {
-            let isSolved = [...puzzleContainer.children].every((piece, index) => 
+            let isSolved = [...puzzleContainer.children].every((piece, index) =>
                 parseInt(piece.getAttribute('data-index')) === index);
             if (isSolved) {
                 successMessage.style.display = 'block';
@@ -110,8 +183,9 @@
             referenceImage.src = imageUrl;
             createPuzzle();
         }
-        
+
         startNewGame();
     </script>
 </body>
+
 </html>
