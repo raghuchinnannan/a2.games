@@ -367,7 +367,10 @@
         function updatePlatforms() {
             // Check if we need to create more platforms
             const lastPlatform = platforms[platforms.length - 1];
-            if (player.position.z < lastPlatform.position.z - 10) {
+            
+            // Generate new platform when the player is approaching the last platform
+            // The condition had a logic error - we need to create platforms as player advances
+            if (player.position.z < lastPlatform.position.z - platformGap) {
                 const xOffset = (Math.random() - 0.5) * 4;
                 const zPos = lastPlatform.position.z - platformGap - platformDepth;
                 createPlatform(xOffset, 0, zPos);
