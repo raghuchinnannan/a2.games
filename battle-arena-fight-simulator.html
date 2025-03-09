@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Arena - Fight Simulator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #0a0a23;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .game-title {
+            text-align: center;
+            color: #f5b73c;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .battle-arena {
+            background-color: #18191a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .battle-background {
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            height: 200px;
+            border-radius: 6px;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 30px 20px;
+            margin-bottom: 15px;
+        }
+        
+        .fighter {
+            width: 80px;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+        
+        .fighter-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        
+        .fighter.attack {
+            animation: attack 0.5s ease-in-out;
+        }
+        
+        .fighter.damaged {
+            animation: damaged 0.5s ease-in-out;
+        }
+        
+        @keyframes attack {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(40px); }
+            100% { transform: translateX(0); }
+        }
+        
+        @keyframes damaged {
+            0% { transform: translateX(0); filter: brightness(1); }
+            25% { transform: translateX(-10px); filter: brightness(1.5); }
+            50% { transform: translateX(10px); filter: brightness(1.5); }
+            75% { transform: translateX(-10px); filter: brightness(1.5); }
+            100% { transform: translateX(0); filter: brightness(1); }
+        }
+        
+        .health-bar-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .health-bar {
+            width: 45%;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ff3547, #ff5c6c);
+            transition: width 0.3s ease;
+        }
+        
+        .player-health-fill {
+            background: linear-gradient(to right, #00c851, #1de9b6);
+        }
+        
+        .battle-log {
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            padding: 10px;
+            height: 100px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        @media (min-width: 600px) {
+            .controls {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .btn {
+            padding: 15px 10px;
+            background-color: #2a2a5a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #3a3a8a;
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-attack {
+            background-color: #c62828;
+        }
+        
+        .btn-special {
+            background-color: #7b1fa2;
+        }
+        
+        .btn-defend {
+            background-color: #0288d1;
+        }
+        
+        .btn-heal {
+            background-color: #388e3c;
+        }
+        
+        .character-select {
+            background-color: rgba(0, 0, 0, 0.8);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .character-select h2 {
+            margin-bottom: 20px;
+            color: #f5b73c;
+        }
+        
+        .character-options {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .character-option {
+            width: 80px;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .character-option:hover {
+            transform: scale(1.05);
+            border: 2px solid #f5b73c;
+        }
+        
+        .start-battle {
+            padding: 15px 30px;
+            background-color: #f5b73c;
+            color: #0a0a23;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        
+        .start-battle:hover {
+            background-color: #f7c965;
+            transform: translateY(-2px);
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        .game-over-text {
+            font-size: 2rem;
+            color: #f5b73c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .restart-btn {
+            padding: 15px 30px;
+            background-color: #f5b73c;
+            color: #0a0a23;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #f7c965;
+            transform: translateY(-2px);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f5b73c;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="game-title">Battle Arena</h1>
+        
+        <div class="battle-arena">
+            <!-- Character Selection Screen -->
+            <div class="character-select">
+                <h2>Choose Your Fighter</h2>
+                <div class="character-options">
+                    <div class="character-option" data-character="warrior">
+                        <img src="./images/battle-arena-fight-simulator/warrior.png" alt="Warrior" class="fighter-image">
+                    </div>
+                    <div class="character-option" data-character="mage">
+                        <img src="./images/battle-arena-fight-simulator/mage.png" alt="Mage" class="fighter-image">
+                    </div>
+                    <div class="character-option" data-character="rogue">
+                        <img src="./images/battle-arena-fight-simulator/rogue.png" alt="Rogue" class="fighter-image">
+                    </div>
+                    <div class="character-option" data-character="paladin">
+                        <img src="./images/battle-arena-fight-simulator/paladin.png" alt="Paladin" class="fighter-image">
+                    </div>
+                </div>
+                <button class="start-battle" disabled>Start Battle</button>
+            </div>
+            
+            <!-- Battle Screen (Initially hidden) -->
+            <div class="battle-background">
+                <div class="fighter player-fighter">
+                    <img src="./images/battle-arena-fight-simulator/rogue.png" alt="Player" class="fighter-image">
+                </div>
+                <div class="fighter enemy-fighter">
+                    <img src="./images/battle-arena-fight-simulator/darkmage.png" alt="Enemy" class="fighter-image">
+                </div>
+            </div>
+            
+            <div class="health-bar-container">
+                <div class="health-bar">
+                    <div class="health-fill player-health-fill" style="width: 100%;"></div>
+                </div>
+                <div class="health-bar">
+                    <div class="health-fill enemy-health-fill" style="width: 100%;"></div>
+                </div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value player-attack">0</div>
+                    <div class="stat-label">Attack</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value player-defense">0</div>
+                    <div class="stat-label">Defense</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value player-speed">0</div>
+                    <div class="stat-label">Speed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value player-special">0</div>
+                    <div class="stat-label">Special</div>
+                </div>
+            </div>
+            
+            <div class="battle-log">
+                <div class="log-entry">Welcome to Battle Arena! Choose your fighter to begin.</div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-attack">Attack</button>
+                <button class="btn btn-special">Special</button>
+                <button class="btn btn-defend">Defend</button>
+                <button class="btn btn-heal">Heal</button>
+            </div>
+            
+            <!-- Game Over Screen (Initially hidden) -->
+            <div class="game-over" style="display: none;">
+                <div class="game-over-text">Victory!</div>
+                <button class="restart-btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            isGameActive: false,
+            isPlayerTurn: true,
+            selectedCharacter: null,
+            player: {
+                name: '',
+                health: 100,
+                maxHealth: 100,
+                attack: 0,
+                defense: 0,
+                speed: 0,
+                special: 0,
+                specialCooldown: 0,
+                isDefending: false
+            },
+            enemy: {
+                name: 'Enemy',
+                health: 100,
+                maxHealth: 100,
+                attack: 0,
+                defense: 0,
+                speed: 0,
+                special: 0,
+                specialCooldown: 0,
+                isDefending: false
+            },
+            turnCount: 0
+        };
+
+        // Character Stats
+        const characters = {
+            warrior: {
+                name: 'Warrior',
+                attack: 8,
+                defense: 6,
+                speed: 4,
+                special: 5,
+                specialName: 'Devastating Blow',
+                specialDescription: 'A powerful attack with double damage',
+                imgSrc: './images/battle-arena-fight-simulator/warrior.png'
+            },
+            mage: {
+                name: 'Mage',
+                attack: 9,
+                defense: 3,
+                speed: 5,
+                special: 8,
+                specialName: 'Arcane Blast',
+                specialDescription: 'A magical attack that ignores enemy defense',
+                imgSrc: './images/battle-arena-fight-simulator/mage.png'
+            },
+            rogue: {
+                name: 'Rogue',
+                attack: 7,
+                defense: 4,
+                speed: 8,
+                special: 6,
+                specialName: 'Backstab',
+                specialDescription: 'A sneaky attack with high critical chance',
+                imgSrc: './images/battle-arena-fight-simulator/rogue.png'
+            },
+            paladin: {
+                name: 'Paladin',
+                attack: 6,
+                defense: 7,
+                speed: 3,
+                special: 7,
+                specialName: 'Divine Shield',
+                specialDescription: 'Reduces damage taken and heals for 20 HP',
+                imgSrc: './images/battle-arena-fight-simulator/paladin.png'
+            }
+        };
+
+        // Enemy Types
+        const enemies = [
+            {
+                name: 'Goblin',
+                attack: 5,
+                defense: 3,
+                speed: 7,
+                special: 4,
+                specialName: 'Sneak Attack',
+                specialDescription: 'A quick attack that has a chance to hit twice',
+                imgSrc: './images/battle-arena-fight-simulator/goblin.png'
+            },
+            {
+                name: 'Orc',
+                attack: 7,
+                defense: 5,
+                speed: 3,
+                special: 6,
+                specialName: 'Brutal Swing',
+                specialDescription: 'A powerful attack that can stun the opponent',
+                imgSrc: './images/battle-arena-fight-simulator/orc.png'
+            },
+            {
+                name: 'Dark Mage',
+                attack: 8,
+                defense: 4,
+                speed: 5,
+                special: 7,
+                specialName: 'Shadow Bolt',
+                specialDescription: 'A dark magical attack that drains health',
+                imgSrc: './images/battle-arena-fight-simulator/darkmage.png'
+            },
+            {
+                name: 'Dragon',
+                attack: 9,
+                defense: 8,
+                speed: 4,
+                special: 9,
+                specialName: 'Fire Breath',
+                specialDescription: 'A devastating attack that burns over time',
+                imgSrc: './images/battle-arena-fight-simulator/dragon.png'
+            }
+        ];
+
+        // DOM Elements
+        const characterSelect = document.querySelector('.character-select');
+        const characterOptions = document.querySelectorAll('.character-option');
+        const startBattleBtn = document.querySelector('.start-battle');
+        const playerFighter = document.querySelector('.player-fighter');
+        const enemyFighter = document.querySelector('.enemy-fighter');
+        const playerHealthFill = document.querySelector('.player-health-fill');
+        const enemyHealthFill = document.querySelector('.enemy-health-fill');
+        const battleLog = document.querySelector('.battle-log');
+        const controlBtns = document.querySelectorAll('.controls .btn');
+        const gameOverScreen = document.querySelector('.game-over');
+        const gameOverText = document.querySelector('.game-over-text');
+        const restartBtn = document.querySelector('.restart-btn');
+        const playerAttackStat = document.querySelector('.player-attack');
+        const playerDefenseStat = document.querySelector('.player-defense');
+        const playerSpeedStat = document.querySelector('.player-speed');
+        const playerSpecialStat = document.querySelector('.player-special');
+
+        // Initialize the game
+        function initGame() {
+            // Hide battle elements initially
+            controlBtns.forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Set up character selection with images
+            characterOptions.forEach(option => {
+                const charType = option.getAttribute('data-character');
+                const charImg = characters[charType].imgSrc;
+                option.querySelector('img').src = charImg;
+                
+                option.addEventListener('click', () => {
+                    // Remove selection from all options
+                    characterOptions.forEach(opt => {
+                        opt.style.border = 'none';
+                    });
+                    
+                    // Select this option
+                    option.style.border = '2px solid #f5b73c';
+                    gameState.selectedCharacter = option.getAttribute('data-character');
+                    
+                    // Enable start button
+                    startBattleBtn.disabled = false;
+                });
+            });
+            
+            // Start battle button
+            startBattleBtn.addEventListener('click', () => {
+                if (gameState.selectedCharacter) {
+                    setupBattle();
+                }
+            });
+            
+            // Control buttons
+            document.querySelector('.btn-attack').addEventListener('click', () => {
+                if (gameState.isGameActive && gameState.isPlayerTurn) {
+                    playerAttack();
+                }
+            });
+            
+            document.querySelector('.btn-special').addEventListener('click', () => {
+                if (gameState.isGameActive && gameState.isPlayerTurn) {
+                    playerSpecial();
+                }
+            });
+            
+            document.querySelector('.btn-defend').addEventListener('click', () => {
+                if (gameState.isGameActive && gameState.isPlayerTurn) {
+                    playerDefend();
+                }
+            });
+            
+            document.querySelector('.btn-heal').addEventListener('click', () => {
+                if (gameState.isGameActive && gameState.isPlayerTurn) {
+                    playerHeal();
+                }
+            });
+            
+            // Restart button
+            restartBtn.addEventListener('click', resetGame);
+        }
+
+        // Set up the battle
+        function setupBattle() {
+            // Hide character select screen
+            characterSelect.style.display = 'none';
+            
+            // Set player stats based on character choice
+            const character = characters[gameState.selectedCharacter];
+            gameState.player.name = character.name;
+            gameState.player.attack = character.attack;
+            gameState.player.defense = character.defense;
+            gameState.player.speed = character.speed;
+            gameState.player.special = character.special;
+            
+            // Update player character image in battle arena
+            const selectedCharOption = document.querySelector(`.character-option[data-character="${gameState.selectedCharacter}"]`);
+            const selectedCharImg = selectedCharOption.querySelector('img').src;
+            playerFighter.querySelector('img').src = selectedCharImg;
+            
+            // Update stat display
+            updateStatDisplay();
+            
+            // Select random enemy
+            const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
+            gameState.enemy.name = randomEnemy.name;
+            gameState.enemy.attack = randomEnemy.attack;
+            gameState.enemy.defense = randomEnemy.defense;
+            gameState.enemy.speed = randomEnemy.speed;
+            gameState.enemy.special = randomEnemy.special;
+            
+            // Update enemy image in battle arena
+            enemyFighter.querySelector('img').src = randomEnemy.imgSrc;
+            
+            // Enable control buttons
+            controlBtns.forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            // Start the game
+            gameState.isGameActive = true;
+            addLogMessage(`Battle begins! ${gameState.player.name} vs ${gameState.enemy.name}`);
+            
+            // Determine who goes first based on speed
+            if (gameState.enemy.speed > gameState.player.speed) {
+                gameState.isPlayerTurn = false;
+                addLogMessage(`${gameState.enemy.name} is faster and attacks first!`);
+                setTimeout(enemyTurn, 1500);
+            } else {
+                gameState.isPlayerTurn = true;
+                addLogMessage(`${gameState.player.name} is faster and attacks first!`);
+            }
+        }
+
+        // Player Actions
+        function playerAttack() {
+            if (!gameState.isPlayerTurn) return;
+            
+            // Calculate damage
+            let damage = calculateDamage(gameState.player.attack, gameState.enemy.defense, gameState.enemy.isDefending);
+            
+            // Animation
+            playerFighter.classList.add('attack');
+            setTimeout(() => {
+                playerFighter.classList.remove('attack');
+                enemyFighter.classList.add('damaged');
+                setTimeout(() => {
+                    enemyFighter.classList.remove('damaged');
+                }, 500);
+            }, 300);
+            
+            // Apply damage
+            gameState.enemy.health = Math.max(0, gameState.enemy.health - damage);
+            updateHealthBars();
+            
+            // Log message
+            addLogMessage(`${gameState.player.name} attacks for ${damage} damage!`);
+            
+            // Reset defending status
+            gameState.player.isDefending = false;
+            
+            // Check for game over
+            if (gameState.enemy.health <= 0) {
+                gameOver(true);
+                return;
+            }
+            
+            // Enemy turn
+            endTurn();
+        }
+
+        function playerSpecial() {
+            if (!gameState.isPlayerTurn) return;
+            
+            if (gameState.player.specialCooldown > 0) {
+                addLogMessage(`Special ability is on cooldown for ${gameState.player.specialCooldown} more turns.`);
+                return;
+            }
+            
+            let message = '';
+            let damage = 0;
+            
+            // Different special abilities based on character
+            switch (gameState.selectedCharacter) {
+                case 'warrior':
+                    damage = calculateDamage(gameState.player.attack * 2, gameState.enemy.defense, gameState.enemy.isDefending);
+                    gameState.enemy.health = Math.max(0, gameState.enemy.health - damage);
+                    message = `${gameState.player.name} uses Devastating Blow for ${damage} damage!`;
+                    break;
+                    
+                case 'mage':
+                    damage = gameState.player.attack + gameState.player.special;
+                    gameState.enemy.health = Math.max(0, gameState.enemy.health - damage);
+                    message = `${gameState.player.name} uses Arcane Blast for ${damage} damage, ignoring enemy defense!`;
+                    break;
+                    
+                case 'rogue':
+                    // 50% chance for critical hit
+                    const isCritical = Math.random() < 0.5;
+                    damage = calculateDamage(
+                        gameState.player.attack + gameState.player.special,
+                        gameState.enemy.defense,
+                        gameState.enemy.isDefending
+                    );
+                    
+                    if (isCritical) {
+                        damage = Math.floor(damage * 1.5);
+                        message = `${gameState.player.name} uses Backstab for a CRITICAL ${damage} damage!`;
+                    } else {
+                        message = `${gameState.player.name} uses Backstab for ${damage} damage!`;
+                    }
+                    
+                    gameState.enemy.health = Math.max(0, gameState.enemy.health - damage);
+                    break;
+                    
+                case 'paladin':
+                    // Healing and defense
+                    const healAmount = 20;
+                    gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+                    gameState.player.isDefending = true;
+                    message = `${gameState.player.name} uses Divine Shield, healing for ${healAmount} HP and increasing defense!`;
+                    break;
+            }
+            
+            // Animation
+            playerFighter.classList.add('attack');
+            setTimeout(() => {
+                playerFighter.classList.remove('attack');
+                enemyFighter.classList.add('damaged');
+                setTimeout(() => {
+                    enemyFighter.classList.remove('damaged');
+                }, 500);
+            }, 300);
+            
+            // Update health bars
+            updateHealthBars();
+            
+            // Log message
+            addLogMessage(message);
+            
+            // Set cooldown
+            gameState.player.specialCooldown = 3;
+            
+            // Check for game over
+            if (gameState.enemy.health <= 0) {
+                gameOver(true);
+                return;
+            }
+            
+            // Enemy turn
+            endTurn();
+        }
+
+        function playerDefend() {
+            if (!gameState.isPlayerTurn) return;
+            
+            gameState.player.isDefending = true;
+            addLogMessage(`${gameState.player.name} takes a defensive stance, reducing incoming damage!`);
+            
+            endTurn();
+        }
+
+        function playerHeal() {
+            if (!gameState.isPlayerTurn) return;
+            
+            const healAmount = 15;
+            gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+            updateHealthBars();
+            
+            addLogMessage(`${gameState.player.name} uses a healing potion, restoring ${healAmount} HP!`);
+            
+            endTurn();
+        }
+
+        // Enemy Turn
+        function enemyTurn() {
+            if (!gameState.isGameActive) return;
+            
+            // Random action selection
+            const action = Math.random();
+            
+            if (gameState.enemy.health < 30 && action < 0.3) {
+                // Heal if low health
+                const healAmount = 10;
+                gameState.enemy.health = Math.min(gameState.enemy.maxHealth, gameState.enemy.health + healAmount);
+                updateHealthBars();
+                
+                addLogMessage(`${gameState.enemy.name} uses a healing potion, restoring ${healAmount} HP!`);
+            } else if (action < 0.2) {
+                // Defend
+                gameState.enemy.isDefending = true;
+                addLogMessage(`${gameState.enemy.name} takes a defensive stance!`);
+            } else if (action < 0.4 && gameState.enemy.specialCooldown <= 0) {
+                // Special attack
+                let damage = calculateDamage(
+                    gameState.enemy.attack + gameState.enemy.special,
+                    gameState.player.defense,
+                    gameState.player.isDefending
+                );
+                
+                gameState.player.health = Math.max(0, gameState.player.health - damage);
+                updateHealthBars();
+                
+                addLogMessage(`${gameState.enemy.name} uses ${enemies.find(e => e.name === gameState.enemy.name).specialName} for ${damage} damage!`);
+                
+                // Animation
+                enemyFighter.classList.add('attack');
+                setTimeout(() => {
+                    enemyFighter.classList.remove('attack');
+                    playerFighter.classList.add('damaged');
+                    setTimeout(() => {
+                        playerFighter.classList.remove('damaged');
+                    }, 500);
+                }, 300);
+                
+                gameState.enemy.specialCooldown = 3;
+            } else {
+                // Regular attack
+                let damage = calculateDamage(
+                    gameState.enemy.attack,
+                    gameState.player.defense,
+                    gameState.player.isDefending
+                );
+                
+                gameState.player.health = Math.max(0, gameState.player.health - damage);
+                updateHealthBars();
+                
+                addLogMessage(`${gameState.enemy.name} attacks for ${damage} damage!`);
+                
+                // Animation
+                enemyFighter.classList.add('attack');
+                setTimeout(() => {
+                    enemyFighter.classList.remove('attack');
+                    playerFighter.classList.add('damaged');
+                    setTimeout(() => {
+                        playerFighter.classList.remove('damaged');
+                    }, 500);
+                }, 300);
+            }
+            
+            // Reset defending status
+            gameState.enemy.isDefending = false;
+            
+            // Check for game over
+            if (gameState.player.health <= 0) {
+                gameOver(false);
+                return;
+            }
+            
+            // Player turn
+            gameState.isPlayerTurn = true;
+            gameState.turnCount++;
+            
+            // Reduce cooldowns
+            if (gameState.player.specialCooldown > 0) {
+                gameState.player.specialCooldown--;
+            }
+            
+            if (gameState.enemy.specialCooldown > 0) {
+                gameState.enemy.specialCooldown--;
+            }
+        }
+
+        // Utility Functions
+        function calculateDamage(attackStat, defenseStat, isDefending) {
+            let baseDamage = Math.max(1, attackStat - (defenseStat / 2));
+            
+            // Random variance (±20%)
+            const variance = (Math.random() * 0.4) - 0.2;
+            baseDamage = Math.floor(baseDamage * (1 + variance));
+            
+            // Reduce damage if defending
+            if (isDefending) {
+                baseDamage = Math.floor(baseDamage / 2);
+            }
+            
+            return Math.max(1, baseDamage);
+        }
+
+        function updateHealthBars() {
+            const playerHealthPercent = (gameState.player.health / gameState.player.maxHealth) * 100;
+            const enemyHealthPercent = (gameState.enemy.health / gameState.enemy.maxHealth) * 100;
+            
+            playerHealthFill.style.width = `${playerHealthPercent}%`;
+            enemyHealthFill.style.width = `${enemyHealthPercent}%`;
+        }
+
+        function updateStatDisplay() {
+            playerAttackStat.textContent = gameState.player.attack;
+            playerDefenseStat.textContent = gameState.player.defense;
+            playerSpeedStat.textContent = gameState.player.speed;
+            playerSpecialStat.textContent = gameState.player.special;
+        }
+
+        function addLogMessage(message) {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            battleLog.appendChild(logEntry);
+            battleLog.scrollTop = battleLog.scrollHeight;
+        }
+
+        function endTurn() {
+            gameState.isPlayerTurn = false;
+            setTimeout(enemyTurn, 1500);
+        }
+
+        function gameOver(playerWon) {
+            gameState.isGameActive = false;
+            
+            // Show game over screen
+            gameOverScreen.style.display = 'flex';
+            
+            if (playerWon) {
+                gameOverText.textContent = 'Victory!';
+                addLogMessage(`${gameState.player.name} defeated ${gameState.enemy.name}!`);
+            } else {
+                gameOverText.textContent = 'Defeat!';
+                addLogMessage(`${gameState.player.name} was defeated by ${gameState.enemy.name}!`);
+            }
+            
+            // Disable control buttons
+            controlBtns.forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+        
+        function resetGame() {
+            // Reset game state
+            gameState.isGameActive = false;
+            gameState.isPlayerTurn = true;
+            gameState.selectedCharacter = null;
+            gameState.player.health = 100;
+            gameState.enemy.health = 100;
+            gameState.player.isDefending = false;
+            gameState.enemy.isDefending = false;
+            gameState.player.specialCooldown = 0;
+            gameState.enemy.specialCooldown = 0;
+            gameState.turnCount = 0;
+            
+            // Reset UI
+            updateHealthBars();
+            gameOverScreen.style.display = 'none';
+            characterSelect.style.display = 'flex';
+            
+            // Clear battle log
+            while (battleLog.firstChild) {
+                battleLog.removeChild(battleLog.firstChild);
+            }
+            addLogMessage('Welcome to Battle Arena! Choose your fighter to begin.');
+            
+            // Reset character selection
+            characterOptions.forEach(opt => {
+                opt.style.border = 'none';
+            });
+            startBattleBtn.disabled = true;
+        }
+        
+        // Initialize the game on load
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+    <script>
+        // Add touch event handling for mobile devices
+        document.addEventListener('touchstart', function() {
+            // This empty handler enables :active CSS pseudo-classes on mobile
+        }, false);
+        
+        // Prevent zooming on double-tap for mobile devices
+        document.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
