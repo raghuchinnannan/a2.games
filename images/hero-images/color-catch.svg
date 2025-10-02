@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2038"/>
+      <stop offset="100%" stop-color="#0a1424"/>
+    </linearGradient>
+    <radialGradient id="glowCyan" cx="75%" cy="20%" r="0.6">
+      <stop offset="0%" stop-color="rgba(73,208,255,0.35)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <radialGradient id="glowLime" cx="25%" cy="30%" r="0.6">
+      <stop offset="0%" stop-color="rgba(97,255,168,0.3)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <radialGradient id="glowPink" cx="50%" cy="50%" r="0.6">
+      <stop offset="0%" stop-color="rgba(255,122,217,0.28)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect width="800" height="600" fill="url(#glowCyan)"/>
+  <rect width="800" height="600" fill="url(#glowLime)"/>
+  <rect width="800" height="600" fill="url(#glowPink)"/>
+
+  <!-- Bucket -->
+  <g transform="translate(0, 40)">
+    <rect x="320" y="450" width="160" height="28" rx="12" fill="rgba(255,255,255,0.04)" stroke="#61ffa8" stroke-width="4"/>
+    <rect x="332" y="456" width="136" height="6" rx="3" fill="#61ffa8"/>
+  </g>
+
+  <!-- Falling shapes -->
+  <g>
+    <circle cx="250" cy="180" r="22" fill="#49d0ff" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+    <circle cx="540" cy="140" r="18" fill="#61ffa8" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+    <circle cx="460" cy="230" r="20" fill="#ff7ad9" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+  </g>
+
+  <!-- Bomb -->
+  <g>
+    <circle cx="600" cy="220" r="22" fill="#ff5b5b" stroke="#2b0a0a" stroke-width="3"/>
+    <path d="M600 198 C 610 188, 615 186, 612 175" fill="none" stroke="#ffd166" stroke-width="3"/>
+  </g>
+
+  <!-- Title -->
+  <text x="50%" y="72" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="38" font-weight="800" fill="#8ecbff">COLOR CATCH</text>
+</svg>
+
