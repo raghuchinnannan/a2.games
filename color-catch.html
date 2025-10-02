@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Color Catch</title>
+    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 50% 10%, #142037, #0d1629 60%, #0a1120 100%);
+            color: #e8f0ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .game-wrap {
+            position: relative;
+            width: min(92vw, 720px);
+            height: min(92svh, 900px);
+            aspect-ratio: unset;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, rgba(19,32,56,0.9), rgba(10,16,28,0.9));
+            padding: 18px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 12px;
+            background:
+                radial-gradient(120px 80px at 80% 15%, rgba(93, 132, 255, 0.12), rgba(0,0,0,0) 60%),
+                radial-gradient(120px 80px at 20% 25%, rgba(111, 255, 176, 0.10), rgba(0,0,0,0) 60%),
+                #0c1528;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06);
+        }
+        .hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .badge {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-weight: 600;
+            color: #bcd3ff;
+            text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+        }
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            background: linear-gradient(180deg, rgba(8,12,22,0.78), rgba(8,12,22,0.78));
+            border-radius: 12px;
+        }
+        .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); letter-spacing: 0.5px; color: #8ecbff; }
+        .subtle { color: #a7b8da; opacity: .9; }
+        .legend { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+        .legend-row { display: flex; align-items: center; gap: 10px; }
+        .chip { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,0.5) inset; }
+        .chip.cyan { background: #49d0ff; }
+        .chip.lime { background: #61ffa8; }
+        .chip.pink { background: #ff7ad9; }
+        .chip.red { background: #ff5b5b; box-shadow: 0 0 0 2px #2b0a0a inset; }
+        .pts { color: #cfe0ff; font-weight: 600; }
+        .cta {
+            pointer-events: auto;
+            padding: 12px 18px;
+            background: linear-gradient(180deg, #2b6cff, #1f56d8);
+            color: white; border: 0; border-radius: 10px; font-weight: 700; font-size: 16px;
+            box-shadow: 0 12px 30px rgba(43,108,255,0.35);
+            cursor: pointer; transition: transform .1s ease, box-shadow .2s ease;
+        }
+        .cta:active { transform: translateY(1px); box-shadow: 0 8px 18px rgba(43,108,255,0.25); }
+        .controls {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            pointer-events: none;
+        }
+        .btn {
+            width: 68px; height: 68px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: #d8e6ff;
+            display: grid; place-items: center;
+            font-size: 28px; user-select: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+            pointer-events: auto; transition: transform .05s ease; touch-action: manipulation;
+        }
+        .btn:active { transform: translateY(1px) scale(0.98); }
+        .btn-primary { width: 120px; border-radius: 14px; font-size: 18px; font-weight: 700; }
+        @media (min-width: 920px) { .controls { display: none; } }
+    </style>
+    <meta name="description" content="Catch colors that match your bucket. Clean, smooth arcade fun.">
+</head>
+<body>
+    <div class="game-wrap">
+        <div class="hud">
+            <div class="badge">Score: <span id="score">0</span></div>
+            <div class="badge">Lives: <span id="lives">3</span></div>
+            <div class="badge">Best: <span id="best">0</span></div>
+        </div>
+        <canvas id="board" width="600" height="800" aria-label="Color Catch game area"></canvas>
+        <div id="menu" class="overlay" role="dialog" aria-modal="true">
+            <div class="title">Color Catch</div>
+            <div class="subtle">Move left/right. Cyan +5, Lime +10. Red bombs = -1 life.</div>
+            <div class="legend" aria-label="Scoring legend">
+                <div class="legend-row"><span class="chip cyan" aria-hidden="true"></span><span>Cyan</span><span class="pts">+5</span></div>
+                <div class="legend-row"><span class="chip lime" aria-hidden="true"></span><span>Lime</span><span class="pts">+10</span></div>
+                <div class="legend-row"><span class="chip red" aria-hidden="true"></span><span>Bomb</span><span class="pts">-1 life</span></div>
+            </div>
+            <button id="startBtn" class="cta">Play</button>
+        </div>
+        <div id="gameOver" class="overlay" style="display:none">
+            <div class="title">Game Over</div>
+            <div class="subtle">Final Score: <span id="final">0</span></div>
+            <button id="restartBtn" class="cta">Restart</button>
+        </div>
+        <div class="controls" aria-hidden="true">
+            <button class="btn" id="btnLeft">◀</button>
+            <button class="btn" id="btnRight">▶</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const bestEl = document.getElementById('best');
+        const menu = document.getElementById('menu');
+        const gameOverEl = document.getElementById('gameOver');
+        const finalEl = document.getElementById('final');
+
+        const colors = [
+            { name: 'cyan', main: '#49d0ff', glow: 'rgba(73,208,255,0.4)', points: 5 },
+            { name: 'lime', main: '#61ffa8', glow: 'rgba(97,255,168,0.4)', points: 10 },
+        ];
+        const bombColor = { main: '#ff5b5b', glow: 'rgba(255,91,91,0.4)' };
+
+        const player = { x: canvas.width/2, y: canvas.height - 80, w: 110, h: 24, speed: 520, colorIndex: 0 };
+        let objects = []; // falling items
+        let popups = [];  // floating score popups
+        let score = 0;
+        let lives = 3;
+        let best = Number(localStorage.getItem('color_catch_best') || 0);
+        let running = false;
+        let lastTs = 0;
+        let spawnTimer = 0;
+        let fallSpeed = 180; // px/s
+
+        bestEl.textContent = best;
+
+        function reset() {
+            objects = [];
+            score = 0; lives = 3;
+            player.x = canvas.width/2;
+            player.colorIndex = 0;
+            fallSpeed = 180;
+            spawnTimer = 0;
+            scoreEl.textContent = score;
+            livesEl.textContent = lives;
+        }
+
+        function start() {
+            menu.style.display = 'none';
+            gameOverEl.style.display = 'none';
+            reset();
+            running = true;
+            lastTs = performance.now();
+            requestAnimationFrame(loop);
+        }
+
+        function end() {
+            running = false;
+            finalEl.textContent = score;
+            if (score > best) { best = score; localStorage.setItem('color_catch_best', String(best)); bestEl.textContent = best; }
+            gameOverEl.style.display = 'flex';
+        }
+
+        function spawnObject() {
+            // Slightly increased bomb chance retained
+            const isBomb = Math.random() < 0.16;
+            if (isBomb) {
+                objects.push({ kind: 'bomb', x: rand(24, canvas.width - 24), y: -24, r: 16 });
+            } else {
+                const colorIndex = Math.floor(Math.random() * colors.length); // cyan or lime
+                const radius = rand(12, 18);
+                objects.push({ kind: 'color', colorIndex, x: rand(radius, canvas.width - radius), y: -radius, r: radius });
+            }
+        }
+
+        function rand(a, b) { return Math.random() * (b - a) + a; }
+
+        function update(dt) {
+            // Move objects
+            for (let i = 0; i < objects.length; i++) {
+                const o = objects[i];
+                o.y += fallSpeed * dt;
+            }
+
+            // Remove off-screen and penalize missed matching colors lightly
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const o = objects[i];
+                if (o.y - o.r > canvas.height) {
+                    // Missed a color of current type? no penalty; missed bomb: no change
+                    objects.splice(i, 1);
+                }
+            }
+
+            // Collisions
+            const px1 = player.x - player.w/2, px2 = player.x + player.w/2;
+            const by = player.y - player.h/2; // top edge of bucket area
+            const bucketLeft = px1;
+            const bucketRight = px2;
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const o = objects[i];
+                if (o.y + o.r >= by && o.y - o.r <= by + player.h) {
+                    // Allow slight leniency on sides for fair catches
+                    const withinX = (o.x + o.r) >= (bucketLeft - 4) && (o.x - o.r) <= (bucketRight + 4);
+                    if (withinX) {
+                        if (o.kind === 'bomb') {
+                            // Bomb hit
+                            hitEffect(o.x, o.y);
+                            objects.splice(i, 1);
+                            loseLife();
+                        } else if (o.kind === 'color') {
+                            const pts = colors[o.colorIndex]?.points ?? 5;
+                            score += pts;
+                            scoreEl.textContent = score;
+                            catchEffect(o.x, o.y, colors[o.colorIndex].glow);
+                            spawnPopup(`+${pts}`, o.x, o.y, colors[o.colorIndex].main);
+                            // Slight difficulty ramp based on reward
+                            fallSpeed = Math.min(520, fallSpeed + (pts >= 10 ? 6 : 4));
+                            objects.splice(i, 1);
+                        }
+                    }
+                }
+            }
+
+            // Update popups
+            for (let i = popups.length - 1; i >= 0; i--) {
+                const p = popups[i];
+                p.t += dt;
+                p.y -= 40 * dt;
+                if (p.t >= p.life) popups.splice(i, 1);
+            }
+
+            // Spawning
+            spawnTimer -= dt;
+            if (spawnTimer <= 0) {
+                spawnObject();
+                const interval = Math.max(0.35, 1.0 - score * 0.01);
+                spawnTimer = interval;
+            }
+        }
+
+        function loseLife() {
+            lives -= 1; livesEl.textContent = lives;
+            if (lives <= 0) end();
+        }
+
+        function drawRoundedRect(x, y, w, h, r) {
+            const rr = Math.min(r, Math.min(w, h)/2);
+            ctx.beginPath();
+            ctx.moveTo(x + rr, y);
+            ctx.arcTo(x + w, y, x + w, y + h, rr);
+            ctx.arcTo(x + w, y + h, x, y + h, rr);
+            ctx.arcTo(x, y + h, x, y, rr);
+            ctx.arcTo(x, y, x + w, y, rr);
+            ctx.closePath();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Soft vignette
+            const vg = ctx.createRadialGradient(canvas.width/2, canvas.height*0.4, 50, canvas.width/2, canvas.height*0.4, canvas.height*0.85);
+            vg.addColorStop(0, 'rgba(255,255,255,0.04)');
+            vg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Player bucket (neutral look)
+            const bx = player.x - player.w/2, by = player.y - player.h/2;
+            drawRoundedRect(bx, by, player.w, player.h, 12);
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.stroke();
+            // Bucket glow line
+            ctx.beginPath();
+            ctx.moveTo(bx + 8, by + 6);
+            ctx.lineTo(bx + player.w - 8, by + 6);
+            ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.8;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Objects
+            for (const o of objects) {
+                if (o.kind === 'bomb') {
+                    // glow
+                    ctx.fillStyle = bombColor.glow;
+                    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 2, 0, Math.PI*2); ctx.fill();
+                    // body
+                    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2);
+                    ctx.fillStyle = bombColor.main; ctx.fill();
+                    ctx.lineWidth = 2; ctx.strokeStyle = '#2b0a0a'; ctx.stroke();
+                    // fuse
+                    ctx.beginPath();
+                    ctx.moveTo(o.x, o.y - o.r);
+                    ctx.quadraticCurveTo(o.x + 6, o.y - o.r - 10, o.x + 2, o.y - o.r - 16);
+                    ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2; ctx.stroke();
+                } else {
+                    const col = colors[o.colorIndex];
+                    // glow
+                    ctx.fillStyle = col.glow;
+                    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 1.9, 0, Math.PI*2); ctx.fill();
+                    // body
+                    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2);
+                    const grad = ctx.createLinearGradient(o.x - o.r, o.y - o.r, o.x + o.r, o.y + o.r);
+                    grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.15, col.main); grad.addColorStop(1, col.main);
+                    ctx.fillStyle = grad; ctx.fill();
+                    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.stroke();
+                }
+            }
+
+            // Score popups
+            for (const p of popups) {
+                const alpha = Math.max(0, 1 - p.t / p.life);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.color;
+                ctx.font = 'bold 20px Poppins, Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(p.text, p.x, p.y);
+                ctx.restore();
+            }
+        }
+
+        function catchEffect(x, y, glow) {
+            // simple pulse
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(x, y, 36, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+
+        function hitEffect(x, y) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = 'rgba(255,91,91,0.35)';
+            ctx.beginPath(); ctx.arc(x, y, 42, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+
+        function loop(ts) {
+            if (!running) return;
+            const dt = Math.min(0.04, (ts - lastTs) / 1000);
+            lastTs = ts;
+            handleMovement(dt);
+            update(dt);
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        // Input & movement
+        let input = { left: false, right: false };
+        function handleMovement(dt) {
+            const maxX = canvas.width - player.w/2 - 6;
+            const minX = player.w/2 + 6;
+            if (input.left)  player.x -= player.speed * dt;
+            if (input.right) player.x += player.speed * dt;
+            if (player.x < minX) player.x = minX;
+            if (player.x > maxX) player.x = maxX;
+        }
+
+        // No mode switching needed; both colors award points
+        function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') input.right = true;
+            if ((e.key === 'Enter' || e.key === ' ') && menu.style.display !== 'none') start();
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') input.right = false;
+        });
+
+        const leftBtn = document.getElementById('btnLeft');
+        const rightBtn = document.getElementById('btnRight');
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+        function bindHold(el, onDown, onUp) {
+            let pressed = false;
+            const down = (ev) => { ev.preventDefault(); pressed = true; onDown(); };
+            const up = () => { pressed = false; onUp && onUp(); };
+            if (isTouchDevice) {
+                el.addEventListener('touchstart', down, { passive: false });
+                el.addEventListener('touchend', up);
+            } else {
+                el.addEventListener('mousedown', down);
+                el.addEventListener('mouseup', up);
+                el.addEventListener('mouseleave', up);
+            }
+        }
+        bindHold(leftBtn,  () => input.left = true,  () => input.left = false);
+        bindHold(rightBtn, () => input.right = true, () => input.right = false);
+
+        // No switch button in dual-color always-on mode
+
+        document.getElementById('startBtn').addEventListener('click', start);
+        document.getElementById('restartBtn').addEventListener('click', start);
+
+        // Initial static render so the canvas isn't blank on load
+        render();
+
+        function spawnPopup(text, x, y, color) {
+            popups.push({ text, x, y, color, t: 0, life: 0.6 });
+        }
+    })();
+    </script>
+</body>
+</html>
+
