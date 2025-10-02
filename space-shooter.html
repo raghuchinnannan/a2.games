@@ -160,6 +160,7 @@
             <div class="controls-hint">
                 <div>W/A/S/D or Arrow Keys: Move</div>
                 <div>Space: Shoot</div>
+                <div>P or Escape: Pause</div>
                 <div>R: Restart</div>
             </div>
         </div>
@@ -185,6 +186,7 @@
         window.addEventListener('resize', resizeCanvas);
 
         let gameActive = true;
+        let gamePaused = false;
         let score = 0;
         let wave = 1;
         let health = 100;
@@ -276,8 +278,26 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            update();
+            if (!gamePaused) {
+                update();
+            }
             render();
+            
+            // Show pause indicator
+            if (gamePaused) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#00FFFF';
+                ctx.font = '48px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+                
+                ctx.font = '24px Orbitron';
+                ctx.fillText('Press P to Resume', canvas.width/2, canvas.height/2 + 60);
+                ctx.restore();
+            }
 
             requestAnimationFrame(gameLoop);
         }
@@ -696,6 +716,12 @@
                 case 'r':
                     if (!gameActive) {
                         restartGame();
+                    }
+                    break;
+                case 'p':
+                case 'escape':
+                    if (gameActive) {
+                        gamePaused = !gamePaused;
                     }
                     break;
             }
