@@ -216,12 +216,25 @@
             border-radius: 5px;
             cursor: pointer;
             overflow: hidden;
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
         
         .character-option:hover {
             transform: scale(1.05);
             border: 2px solid #f5b73c;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .character-option.selected {
+            border: 3px solid #f5b73c;
+            background-color: rgba(245, 183, 60, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(245, 183, 60, 0.5);
+        }
+        
+        .character-option.selected:hover {
+            transform: scale(1.1);
         }
         
         .start-battle {
@@ -314,16 +327,16 @@
                 <h2>Choose Your Fighter</h2>
                 <div class="character-options">
                     <div class="character-option" data-character="warrior">
-                        <img src="./images/battle-arena-fight-simulator/warrior.png" alt="Warrior" class="fighter-image">
+                        <img src="images/battle-arena-fight-simulator/warrior.png" alt="Warrior" class="fighter-image">
                     </div>
                     <div class="character-option" data-character="mage">
-                        <img src="./images/battle-arena-fight-simulator/mage.png" alt="Mage" class="fighter-image">
+                        <img src="images/battle-arena-fight-simulator/mage.png" alt="Mage" class="fighter-image">
                     </div>
                     <div class="character-option" data-character="rogue">
-                        <img src="./images/battle-arena-fight-simulator/rogue.png" alt="Rogue" class="fighter-image">
+                        <img src="images/battle-arena-fight-simulator/rogue.png" alt="Rogue" class="fighter-image">
                     </div>
                     <div class="character-option" data-character="paladin">
-                        <img src="./images/battle-arena-fight-simulator/paladin.png" alt="Paladin" class="fighter-image">
+                        <img src="images/battle-arena-fight-simulator/paladin.png" alt="Paladin" class="fighter-image">
                     </div>
                 </div>
                 <button class="start-battle" disabled>Start Battle</button>
@@ -332,10 +345,10 @@
             <!-- Battle Screen (Initially hidden) -->
             <div class="battle-background">
                 <div class="fighter player-fighter">
-                    <img src="./images/battle-arena-fight-simulator/rogue.png" alt="Player" class="fighter-image">
+                    <img src="images/battle-arena-fight-simulator/rogue.png" alt="Player" class="fighter-image">
                 </div>
                 <div class="fighter enemy-fighter">
-                    <img src="./images/battle-arena-fight-simulator/darkmage.png" alt="Enemy" class="fighter-image">
+                    <img src="images/battle-arena-fight-simulator/darkmage.png" alt="Enemy" class="fighter-image">
                 </div>
             </div>
             
@@ -427,7 +440,7 @@
                 special: 5,
                 specialName: 'Devastating Blow',
                 specialDescription: 'A powerful attack with double damage',
-                imgSrc: './images/battle-arena-fight-simulator/warrior.png'
+                imgSrc: 'images/battle-arena-fight-simulator/warrior.png'
             },
             mage: {
                 name: 'Mage',
@@ -437,7 +450,7 @@
                 special: 8,
                 specialName: 'Arcane Blast',
                 specialDescription: 'A magical attack that ignores enemy defense',
-                imgSrc: './images/battle-arena-fight-simulator/mage.png'
+                imgSrc: 'images/battle-arena-fight-simulator/mage.png'
             },
             rogue: {
                 name: 'Rogue',
@@ -447,7 +460,7 @@
                 special: 6,
                 specialName: 'Backstab',
                 specialDescription: 'A sneaky attack with high critical chance',
-                imgSrc: './images/battle-arena-fight-simulator/rogue.png'
+                imgSrc: 'images/battle-arena-fight-simulator/rogue.png'
             },
             paladin: {
                 name: 'Paladin',
@@ -457,7 +470,7 @@
                 special: 7,
                 specialName: 'Divine Shield',
                 specialDescription: 'Reduces damage taken and heals for 20 HP',
-                imgSrc: './images/battle-arena-fight-simulator/paladin.png'
+                imgSrc: 'images/battle-arena-fight-simulator/paladin.png'
             }
         };
 
@@ -471,7 +484,7 @@
                 special: 4,
                 specialName: 'Sneak Attack',
                 specialDescription: 'A quick attack that has a chance to hit twice',
-                imgSrc: './images/battle-arena-fight-simulator/goblin.png'
+                imgSrc: 'images/battle-arena-fight-simulator/goblin.png'
             },
             {
                 name: 'Orc',
@@ -481,7 +494,7 @@
                 special: 6,
                 specialName: 'Brutal Swing',
                 specialDescription: 'A powerful attack that can stun the opponent',
-                imgSrc: './images/battle-arena-fight-simulator/orc.png'
+                imgSrc: 'images/battle-arena-fight-simulator/orc.png'
             },
             {
                 name: 'Dark Mage',
@@ -491,7 +504,7 @@
                 special: 7,
                 specialName: 'Shadow Bolt',
                 specialDescription: 'A dark magical attack that drains health',
-                imgSrc: './images/battle-arena-fight-simulator/darkmage.png'
+                imgSrc: 'images/battle-arena-fight-simulator/darkmage.png'
             },
             {
                 name: 'Dragon',
@@ -501,7 +514,7 @@
                 special: 9,
                 specialName: 'Fire Breath',
                 specialDescription: 'A devastating attack that burns over time',
-                imgSrc: './images/battle-arena-fight-simulator/dragon.png'
+                imgSrc: 'images/battle-arena-fight-simulator/dragon.png'
             }
         ];
 
@@ -523,6 +536,41 @@
         const playerSpeedStat = document.querySelector('.player-speed');
         const playerSpecialStat = document.querySelector('.player-special');
 
+        // Handle character selection
+        function handleCharacterSelection() {
+            try {
+                // Remove selection from all options
+                characterOptions.forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.style.border = '';
+                });
+                
+                // Select this option
+                this.classList.add('selected');
+                gameState.selectedCharacter = this.getAttribute('data-character');
+                
+                // Validate selection
+                if (!gameState.selectedCharacter || !characters[gameState.selectedCharacter]) {
+                    throw new Error('Invalid character selection');
+                }
+                
+                // Enable start button and provide feedback
+                startBattleBtn.disabled = false;
+                startBattleBtn.textContent = `Start Battle with ${characters[gameState.selectedCharacter].name}`;
+                
+                // Add visual feedback in log
+                const characterName = characters[gameState.selectedCharacter].name;
+                addLogMessage(`${characterName} selected! Click 'Start Battle' to begin.`);
+                
+                // Debug info
+                debugCharacterSelection();
+                
+            } catch (error) {
+                console.error('Character selection error:', error);
+                addLogMessage('Error selecting character. Please try again.');
+            }
+        }
+
         // Initialize the game
         function initGame() {
             // Hide battle elements initially
@@ -533,22 +581,40 @@
             // Set up character selection with images
             characterOptions.forEach(option => {
                 const charType = option.getAttribute('data-character');
-                const charImg = characters[charType].imgSrc;
-                option.querySelector('img').src = charImg;
+                const character = characters[charType];
                 
-                option.addEventListener('click', () => {
-                    // Remove selection from all options
-                    characterOptions.forEach(opt => {
-                        opt.style.border = 'none';
-                    });
+                if (character) {
+                    const charImg = character.imgSrc;
+                    const imgElement = option.querySelector('img');
                     
-                    // Select this option
-                    option.style.border = '2px solid #f5b73c';
-                    gameState.selectedCharacter = option.getAttribute('data-character');
-                    
-                    // Enable start button
-                    startBattleBtn.disabled = false;
+                    if (imgElement) {
+                        imgElement.src = charImg;
+                        imgElement.alt = character.name;
+                        
+                        // Add error handling for image loading
+                        imgElement.onerror = function() {
+                            console.warn(`Failed to load image: ${charImg}`);
+                            // Use a fallback or placeholder
+                            this.style.background = 'rgba(255, 255, 255, 0.3)';
+                            this.style.color = '#f5b73c';
+                            this.innerHTML = character.name;
+                        };
+                    }
+                }
+                
+                // Add click event listener with better handling
+                option.addEventListener('click', handleCharacterSelection);
+                
+                // Add keyboard support for accessibility
+                option.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCharacterSelection.call(option);
+                    }
                 });
+                
+                // Make it focusable for keyboard navigation
+                option.setAttribute('tabindex', '0');
             });
             
             // Start battle button
@@ -958,13 +1024,34 @@
             
             // Reset character selection
             characterOptions.forEach(opt => {
-                opt.style.border = 'none';
+                opt.classList.remove('selected');
+                opt.style.border = '';
             });
             startBattleBtn.disabled = true;
+            startBattleBtn.textContent = 'Start Battle';
         }
         
+        // Add debugging information
+        function debugCharacterSelection() {
+            console.log('Character selection debug info:');
+            console.log('Selected character:', gameState.selectedCharacter);
+            console.log('Start button disabled:', startBattleBtn.disabled);
+            
+            characterOptions.forEach((option, index) => {
+                const hasSelectedClass = option.classList.contains('selected');
+                const dataChar = option.getAttribute('data-character');
+                console.log(`Option ${index}: data-character="${dataChar}", selected="${hasSelectedClass}"`);
+            });
+        }
+
         // Initialize the game on load
         window.addEventListener('DOMContentLoaded', initGame);
+        
+        // Add error handling for the entire script
+        window.addEventListener('error', function(e) {
+            console.error('Game error:', e.error);
+            addLogMessage('An error occurred. Please refresh the page and try again.');
+        });
     </script>
     <script>
         // Add touch event handling for mobile devices
