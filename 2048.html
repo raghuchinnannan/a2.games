@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 Game - a2.games</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="./images/logo.png">
@@ -58,6 +59,17 @@
             cursor: pointer;
             margin-bottom: 10px;
         }
+        #game-canvas {
+            max-width: 30vw;
+            max-height: 30vw;
+        }
+        @media (max-width: 720px) {
+            #game-canvas {
+                max-width: 90vw !important;
+                max-height: 90vw !important;
+                touch-action: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -69,7 +81,7 @@
         <h1>2048</h1>
         <p>Join the numbers and get to the 2048 tile!</p>
         <button class="reset-btn" onclick="resetGame()">Restart</button>
-        <canvas id="game-canvas" width="400" height="400"></canvas>
+        <canvas id="game-canvas" width="1000" height="1000"></canvas>
         <a href="index.html" class="back-link">&larr; Back to Home</a>
     </div>
     <div class="footer">
@@ -81,6 +93,11 @@
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
 
+        window.addEventListener("keydown", function(e) {
+        if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
+            e.preventDefault(); // Prevent the default browser action (scrolling)
+        }
+        }, false);
         function resetGame() {
             board = Array(size).fill().map(() => Array(size).fill(0));
             score = 0;
@@ -150,14 +167,14 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Score
-            ctx.font = "bold 24px Poppins";
+            ctx.font = `bold ${canvas.width / 25}px Poppins`;
             ctx.fillStyle = "#333";
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
             ctx.fillText(`Score: ${score}`, canvas.width / 2, 10);
 
             // Board alignment
-            const tileSize = 80;
+            const tileSize = canvas.width / 4.6;
             const gap = 10;
             const boardSize = size * tileSize + (size - 1) * gap;
             const offsetX = (canvas.width - boardSize) / 2;
@@ -178,7 +195,7 @@
                     // Tile number
                     if (val) {
                         ctx.fillStyle = "#222";
-                        ctx.font = "bold 32px Poppins";
+                        ctx.font = `bold ${tileSize / 4}px Poppins`;
                         ctx.textAlign = "center";
                         ctx.textBaseline = "middle";
                         ctx.fillText(val, x + tileSize / 2, y + tileSize / 2);
