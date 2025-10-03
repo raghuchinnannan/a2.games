@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Whack-a-Mole</title>
+    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 50% 10%, #182437, #0e1727 60%, #0a1020 100%);
+            color: #e8f0ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .wrap {
+            position: relative;
+            width: min(92vw, 720px);
+            height: min(92svh, 900px);
+            border-radius: 16px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(17,28,49,0.95), rgba(10,16,28,0.95));
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; }
+        .badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; font-weight: 600; color: #bcd3ff; }
+        .grid { position: absolute; inset: 18px; top: 70px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 14px; }
+        .cell { position: relative; background: #0c1528; border-radius: 12px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06); display: grid; place-items: center; overflow: hidden; }
+        .hole { position: absolute; width: 70%; height: 20%; bottom: 10%; background: radial-gradient(ellipse at center, #0b1222 0%, #070c18 60%, #060a12 100%); border-radius: 50%; filter: blur(0.2px); }
+        .mole { position: absolute; bottom: 10%; width: 52%; aspect-ratio: 1/1; background: linear-gradient(180deg, #ffd166, #ffb347); border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.15s ease; display: grid; place-items: center; }
+        .mole.eye { display: none; }
+        .mole.up { transform: translateY(0%); }
+        .mole.bad { background: linear-gradient(180deg, #ff7a7a, #ff5b5b); }
+        .overlay { position: absolute; inset: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(8,12,22,0.78); border-radius: 12px; }
+        .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); color: #8ecbff; }
+        .subtle { color: #a7b8da; }
+        .cta { padding: 12px 18px; background: linear-gradient(180deg, #2b6cff, #1f56d8); color: white; border: 0; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 12px 30px rgba(43,108,255,0.35); cursor: pointer; }
+        .controls { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; }
+        .btn { width: 68px; height: 68px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #d8e6ff; display: grid; place-items: center; font-size: 28px; user-select: none; box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06); touch-action: manipulation; }
+        @media (min-width: 920px) { .controls { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="hud">
+            <div class="badge">Score: <span id="score">0</span></div>
+            <div class="badge">Lives: <span id="lives">3</span></div>
+            <div class="badge">Best: <span id="best">0</span></div>
+        </div>
+        <div class="grid" id="grid"></div>
+        <div class="overlay" id="menu">
+            <div class="title">Whack-a-Mole</div>
+            <div class="subtle">Tap moles (+1). Red moles are bombs (-1 life). Misses don't penalize.</div>
+            <button class="cta" id="startBtn">Play</button>
+        </div>
+        <div class="overlay" id="gameOver" style="display:none">
+            <div class="title">Game Over</div>
+            <div class="subtle">Score: <span id="final">0</span></div>
+            <button class="cta" id="restartBtn">Restart</button>
+        </div>
+        <div class="controls" aria-hidden="true">
+            <button class="btn" id="btnLeft">◀</button>
+            <button class="btn" id="btnRight">▶</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const gridEl = document.getElementById('grid');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const bestEl = document.getElementById('best');
+        const menuEl = document.getElementById('menu');
+        const gameOverEl = document.getElementById('gameOver');
+        const finalEl = document.getElementById('final');
+
+        const cells = [];
+        const size = 3; // 3x3 grid
+        const upTimeMin = 550; // ms
+        const upTimeMax = 1100; // ms
+        const spawnIntervalMin = 380; // ms
+        const spawnIntervalMax = 740; // ms
+        const bombChance = 0.18; // 18% bombs
+
+        let score = 0;
+        let best = Number(localStorage.getItem('wam_best') || 0);
+        let lives = 3;
+        let running = false;
+        let timers = [];
+        let currentIndex = 0; // for keyboard left/right navigation
+
+        bestEl.textContent = best;
+
+        function buildGrid() {
+            gridEl.innerHTML = '';
+            cells.length = 0;
+            for (let i = 0; i < size * size; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                const hole = document.createElement('div');
+                hole.className = 'hole';
+                const mole = document.createElement('div');
+                mole.className = 'mole';
+                cell.appendChild(hole);
+                cell.appendChild(mole);
+                gridEl.appendChild(cell);
+                cells.push({ cell, mole, isUp: false, isBomb: false });
+
+                // click/tap handling
+                mole.addEventListener('pointerdown', () => whack(i));
+            }
+        }
+
+        function reset() {
+            clearTimers();
+            score = 0; lives = 3; scoreEl.textContent = score; livesEl.textContent = lives;
+            cells.forEach(c => { c.mole.classList.remove('up', 'bad'); c.isUp = false; c.isBomb = false; });
+            currentIndex = 0;
+        }
+
+        function start() {
+            menuEl.style.display = 'none';
+            gameOverEl.style.display = 'none';
+            reset();
+            running = true;
+            loopSpawn();
+        }
+
+        function end() {
+            running = false;
+            clearTimers();
+            finalEl.textContent = score;
+            if (score > best) { best = score; localStorage.setItem('wam_best', String(best)); bestEl.textContent = best; }
+            gameOverEl.style.display = 'flex';
+        }
+
+        function clearTimers() { timers.forEach(t => clearTimeout(t)); timers = []; }
+
+        function loopSpawn() {
+            if (!running) return;
+            spawnOne();
+            const delay = rand(spawnIntervalMin, spawnIntervalMax);
+            timers.push(setTimeout(loopSpawn, delay));
+        }
+
+        function spawnOne() {
+            // pick a random hole not already up
+            const upIndices = cells.map((c, idx) => c.isUp ? idx : -1).filter(i => i >= 0);
+            const choices = cells.map((_, idx) => idx).filter(i => !upIndices.includes(i));
+            if (choices.length === 0) return;
+            const idx = choices[Math.floor(Math.random() * choices.length)];
+            const isBomb = Math.random() < bombChance;
+            const upTime = rand(upTimeMin, upTimeMax);
+            const c = cells[idx];
+            c.isUp = true;
+            c.isBomb = isBomb;
+            c.mole.classList.add('up');
+            c.mole.classList.toggle('bad', isBomb);
+
+            timers.push(setTimeout(() => hide(idx), upTime));
+        }
+
+        function hide(idx) {
+            const c = cells[idx];
+            if (!c) return;
+            c.isUp = false;
+            c.mole.classList.remove('up');
+            c.isBomb = false;
+        }
+
+        function whack(idx) {
+            const c = cells[idx];
+            if (!running || !c || !c.isUp) return;
+            c.isUp = false;
+            c.mole.classList.remove('up');
+            if (c.isBomb) {
+                lives -= 1; livesEl.textContent = lives;
+                if (lives <= 0) return end();
+            } else {
+                score += 1; scoreEl.textContent = score;
+            }
+            c.isBomb = false;
+        }
+
+        function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+        // Keyboard navigation: left/right moves focus, space/enter whacks
+        window.addEventListener('keydown', (e) => {
+            if (!running) return;
+            if (e.key === 'ArrowLeft') { currentIndex = (currentIndex + size*size - 1) % (size*size); }
+            if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % (size*size); }
+            if (e.key === ' ' || e.key === 'Enter') { whack(currentIndex); }
+        });
+
+        document.getElementById('startBtn').addEventListener('click', start);
+        document.getElementById('restartBtn').addEventListener('click', start);
+
+        buildGrid();
+    })();
+    </script>
+</body>
+</html>
+
