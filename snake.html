@@ -10,16 +10,18 @@
             font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
             background: radial-gradient(1200px 600px at 50% 10%, #1b2a4a, #0e1627 60%, #0b0f1b 100%);
             color: #e8f0ff;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
         }
         .game-wrap {
             position: relative;
-            width: min(92vw, 720px);
-            aspect-ratio: 1 / 1;
+            width: min(85vh, 85vw, 720px);
+            height: min(85vh, 85vw, 720px);
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
             background: linear-gradient(180deg, rgba(19,32,56,0.9), rgba(10,16,28,0.9));
@@ -36,9 +38,9 @@
         }
         .hud {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
+            top: -60px;
+            left: 0;
+            right: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -54,37 +56,43 @@
             color: #bcd3ff;
             text-shadow: 0 1px 0 rgba(0,0,0,0.35);
         }
-        .controls {
+        .joystick-container {
             position: absolute;
-            inset: 0;
-            display: grid;
-            grid-template-rows: 1fr auto 1fr;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 8px;
-            padding: 16px;
+            bottom: -140px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
             pointer-events: none;
         }
-        .btn {
-            width: 68px;
-            height: 68px;
+        .joystick-base {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.06);
-            color: #d8e6ff;
-            display: grid;
-            place-items: center;
-            font-size: 28px;
-            user-select: none;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
             box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+            position: relative;
             pointer-events: auto;
-            transition: transform .05s ease;
-            touch-action: manipulation;
+            touch-action: none;
         }
-        .btn:active { transform: translateY(1px) scale(0.98); }
-        .ctrl-up    { grid-area: 1 / 2; }
-        .ctrl-left  { grid-area: 2 / 1; }
-        .ctrl-right { grid-area: 2 / 3; }
-        .ctrl-down  { grid-area: 3 / 2; }
+        .joystick-knob {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a9eff, #2b6cff);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 12px rgba(43,108,255,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease;
+            cursor: pointer;
+        }
+        .joystick-knob:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
         .overlay {
             position: absolute;
             inset: 0;
@@ -107,7 +115,44 @@
             cursor: pointer; transition: transform .1s ease, box-shadow .2s ease;
         }
         .cta:active { transform: translateY(1px); box-shadow: 0 8px 18px rgba(43,108,255,0.25); }
-        @media (min-width: 920px) { .controls { display: none; } }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 919px) {
+            body {
+                overflow-y: auto;
+                padding: 20px 0;
+            }
+            .game-wrap {
+                width: min(90vw, 90vh);
+                height: min(90vw, 90vh);
+            }
+            .hud {
+                top: -60px;
+            }
+            .joystick-container {
+                display: block;
+            }
+        }
+        
+        /* Desktop styles */
+        @media (min-width: 920px) {
+            .hud {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            .joystick-container {
+                display: none;
+            }
+        }
+        
+        /* Very small screens */
+        @media (max-height: 600px) {
+            .game-wrap {
+                width: min(80vh, 80vw);
+                height: min(80vh, 80vw);
+            }
+        }
     </style>
     <link rel="icon" type="image/x-icon" href="./images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
@@ -122,7 +167,7 @@
         <canvas id="board" width="600" height="600" aria-label="Snake game area"></canvas>
         <div id="menu" class="overlay" role="dialog" aria-modal="true">
             <div class="title">Snake Classic</div>
-            <div class="subtle">Use arrow keys or on-screen controls</div>
+            <div class="subtle">Use joystick or arrow keys</div>
             <button id="startBtn" class="cta">Play</button>
         </div>
         <div id="gameOver" class="overlay" style="display:none">
@@ -130,11 +175,10 @@
             <div class="subtle">Final Score: <span id="final">0</span></div>
             <button id="restartBtn" class="cta">Restart</button>
         </div>
-        <div class="controls" aria-hidden="true">
-            <button class="btn ctrl-up"    id="btnUp">▲</button>
-            <button class="btn ctrl-left"  id="btnLeft">◀</button>
-            <button class="btn ctrl-right" id="btnRight">▶</button>
-            <button class="btn ctrl-down"  id="btnDown">▼</button>
+        <div class="joystick-container" aria-hidden="true">
+            <div class="joystick-base" id="joystickBase">
+                <div class="joystick-knob" id="joystickKnob"></div>
+            </div>
         </div>
     </div>
 
@@ -332,41 +376,137 @@
 
         window.addEventListener('keydown', (e) => {
             switch (e.key) {
-                case 'ArrowUp': case 'w': case 'W': setDirection(0, -1); break;
-                case 'ArrowDown': case 's': case 'S': setDirection(0, 1); break;
-                case 'ArrowLeft': case 'a': case 'A': setDirection(-1, 0); break;
-                case 'ArrowRight': case 'd': case 'D': setDirection(1, 0); break;
-                case ' ': if (!isRunning) start(); break;
+                case 'ArrowUp': case 'w': case 'W': 
+                    e.preventDefault();
+                    setDirection(0, -1); 
+                    break;
+                case 'ArrowDown': case 's': case 'S': 
+                    e.preventDefault();
+                    setDirection(0, 1); 
+                    break;
+                case 'ArrowLeft': case 'a': case 'A': 
+                    e.preventDefault();
+                    setDirection(-1, 0); 
+                    break;
+                case 'ArrowRight': case 'd': case 'D': 
+                    e.preventDefault();
+                    setDirection(1, 0); 
+                    break;
+                case ' ': 
+                    e.preventDefault();
+                    if (!isRunning) start(); 
+                    break;
             }
         });
 
-        const btnUp = document.getElementById('btnUp');
-        const btnDown = document.getElementById('btnDown');
-        const btnLeft = document.getElementById('btnLeft');
-        const btnRight = document.getElementById('btnRight');
-
-        const bindHold = (el, fn) => {
-            let active = false;
-            const on = () => { active = true; fn(); };
-            const off = () => { active = false; };
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); on(); });
-            el.addEventListener('touchend', off);
-            el.addEventListener('mousedown', (e) => { e.preventDefault(); on(); });
-            el.addEventListener('mouseup', off);
-            el.addEventListener('mouseleave', off);
-        };
-
-        bindHold(btnUp,    () => setDirection(0, -1));
-        bindHold(btnDown,  () => setDirection(0, 1));
-        bindHold(btnLeft,  () => setDirection(-1, 0));
-        bindHold(btnRight, () => setDirection(1, 0));
+        // Joystick functionality
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        
+        let isJoystickActive = false;
+        let joystickCenterX = 0;
+        let joystickCenterY = 0;
+        let joystickRadius = 35; // Maximum distance knob can move from center
+        
+        function initJoystick() {
+            const rect = joystickBase.getBoundingClientRect();
+            joystickCenterX = rect.left + rect.width / 2;
+            joystickCenterY = rect.top + rect.height / 2;
+        }
+        
+        function updateJoystickDirection(clientX, clientY) {
+            const deltaX = clientX - joystickCenterX;
+            const deltaY = clientY - joystickCenterY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Clamp to joystick radius
+            const clampedDistance = Math.min(distance, joystickRadius);
+            const angle = Math.atan2(deltaY, deltaX);
+            
+            const clampedX = Math.cos(angle) * clampedDistance;
+            const clampedY = Math.sin(angle) * clampedDistance;
+            
+            // Update knob position
+            joystickKnob.style.transform = `translate(${clampedX - 25}px, ${clampedY - 25}px)`;
+            
+            // Determine direction based on angle
+            const threshold = 0.3; // Minimum movement to register direction
+            if (clampedDistance > joystickRadius * threshold) {
+                if (Math.abs(clampedX) > Math.abs(clampedY)) {
+                    // Horizontal movement
+                    if (clampedX > 0) {
+                        setDirection(1, 0); // Right
+                    } else {
+                        setDirection(-1, 0); // Left
+                    }
+                } else {
+                    // Vertical movement
+                    if (clampedY > 0) {
+                        setDirection(0, 1); // Down
+                    } else {
+                        setDirection(0, -1); // Up
+                    }
+                }
+            }
+        }
+        
+        function resetJoystick() {
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            isJoystickActive = false;
+        }
+        
+        // Mouse events
+        joystickBase.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isJoystickActive = true;
+            initJoystick();
+            updateJoystickDirection(e.clientX, e.clientY);
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isJoystickActive) {
+                updateJoystickDirection(e.clientX, e.clientY);
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isJoystickActive) {
+                resetJoystick();
+            }
+        });
+        
+        // Touch events
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isJoystickActive = true;
+            initJoystick();
+            const touch = e.touches[0];
+            updateJoystickDirection(touch.clientX, touch.clientY);
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (isJoystickActive) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                updateJoystickDirection(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', () => {
+            if (isJoystickActive) {
+                resetJoystick();
+            }
+        });
 
         document.getElementById('startBtn').addEventListener('click', start);
         document.getElementById('restartBtn').addEventListener('click', start);
 
         // Auto-resume with Enter on desktop
         window.addEventListener('keydown', (e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && menu.style.display !== 'none') start();
+            if ((e.key === 'Enter' || e.key === ' ') && menu.style.display !== 'none') {
+                e.preventDefault();
+                start();
+            }
         });
 
         // Start paused at menu
