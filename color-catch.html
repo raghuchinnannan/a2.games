@@ -112,6 +112,62 @@
         }
         .btn:active { transform: translateY(1px) scale(0.98); }
         .btn-primary { width: 120px; border-radius: 14px; font-size: 18px; font-weight: 700; }
+        
+        /* Animation effects for bomb catches */
+        .explosion-effect {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .explosion-effect::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,91,91,0.65);
+            box-shadow: 0 0 28px rgba(255,91,91,0.8);
+            transform: translate(-50%, -50%);
+            animation: explode 420ms ease-out forwards;
+        }
+        @keyframes explode {
+            from { 
+                transform: translate(-50%, -50%) scale(0.5); 
+                opacity: 1; 
+            } 
+            to { 
+                transform: translate(-50%, -50%) scale(2.8); 
+                opacity: 0; 
+            }
+        }
+        
+        .screen-shake {
+            animation: shake 250ms ease-in-out;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
+        }
+        
+        .screen-flash {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            animation: flash 180ms ease-out forwards;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes flash {
+            from { opacity: 0.6; }
+            to { opacity: 0; }
+        }
+        
         @media (min-width: 920px) { .controls { display: none; } }
     </style>
     <meta name="description" content="Catch colors that match your bucket. Clean, smooth arcade fun.">
@@ -375,11 +431,46 @@
         }
 
         function hitEffect(x, y) {
-            ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-            ctx.fillStyle = 'rgba(255,91,91,0.35)';
-            ctx.beginPath(); ctx.arc(x, y, 42, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
+            // Create explosion effect at bomb position
+            addExplosionEffect(x, y);
+            // Add screen flash
+            addScreenFlash();
+            // Add screen shake
+            addScreenShake();
+        }
+
+        function addExplosionEffect(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion-effect';
+            explosion.style.left = `${x - 5}px`;
+            explosion.style.top = `${y - 5}px`;
+            explosion.style.width = '10px';
+            explosion.style.height = '10px';
+            
+            const gameWrap = document.querySelector('.game-wrap');
+            gameWrap.appendChild(explosion);
+            
+            // Remove after animation completes
+            setTimeout(() => explosion.remove(), 450);
+        }
+
+        function addScreenFlash() {
+            const flash = document.createElement('div');
+            flash.className = 'screen-flash';
+            
+            const gameWrap = document.querySelector('.game-wrap');
+            gameWrap.appendChild(flash);
+            
+            // Remove after animation completes
+            setTimeout(() => flash.remove(), 200);
+        }
+
+        function addScreenShake() {
+            const gameWrap = document.querySelector('.game-wrap');
+            gameWrap.classList.add('screen-shake');
+            
+            // Remove shake class after animation completes
+            setTimeout(() => gameWrap.classList.remove('screen-shake'), 260);
         }
 
         function loop(ts) {
