@@ -16,13 +16,16 @@
             text-align: center;
         }
         header {
-            background: rgba(0, 0, 0, 0.9);
+            position: fixed;
+            width: 100vw;
+            background: rgba(0, 0, 0);
             padding: 20px;
             font-size: 28px;
             font-weight: bold;
             letter-spacing: 1px;
             text-transform: lowercase;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0);
+            z-index: 100;
         }
         .container {
             max-width: 1200px;
@@ -31,6 +34,7 @@
         }
         .hero {
             padding: 50px 20px;
+            margin-top:150px;
         }
         .hero h1 {
             font-size: 48px;
@@ -38,7 +42,6 @@
         }
         .hero p {
             font-size: 18px;
-            opacity: 0.9;
             max-width: 700px;
             margin: auto;
         }
