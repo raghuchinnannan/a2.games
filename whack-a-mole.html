@@ -36,6 +36,17 @@
         .mole.eye { display: none; }
         .mole.up { transform: translateY(0%); }
         .mole.bad { background: linear-gradient(180deg, #ff7a7a, #ff5b5b); }
+        .popup { position: absolute; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.45); transform: translate(-50%, -50%); pointer-events: none; }
+        .burst, .explode { position: absolute; inset: 0; pointer-events: none; }
+        .burst::before, .explode::before { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); }
+        .burst::before { background: rgba(255,255,255,0.6); box-shadow: 0 0 24px rgba(255,255,255,0.6); animation: burst 350ms ease-out forwards; }
+        .explode::before { background: rgba(255,91,91,0.65); box-shadow: 0 0 28px rgba(255,91,91,0.8); animation: explode 420ms ease-out forwards; }
+        @keyframes burst { from { transform: translate(-50%, -50%) scale(0.4); opacity: 1; } to { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
+        @keyframes explode { from { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } to { transform: translate(-50%, -50%) scale(2.8); opacity: 0; } }
+        .shake { animation: shake 250ms ease-in-out; }
+        @keyframes shake { 0%{ transform: translateX(0);} 25%{ transform: translateX(-4px);} 50%{ transform: translateX(4px);} 75%{ transform: translateX(-3px);} 100%{ transform: translateX(0);} }
+        .flash { position:absolute; inset:18px; background: rgba(255,255,255,0.2); border-radius:12px; animation: flash 180ms ease-out forwards; pointer-events:none; }
+        @keyframes flash { from { opacity: 0.6; } to { opacity: 0; } }
         .overlay { position: absolute; inset: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(8,12,22,0.78); border-radius: 12px; }
         .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); color: #8ecbff; }
         .subtle { color: #a7b8da; }
@@ -81,10 +92,10 @@
 
         const cells = [];
         const size = 3; // 3x3 grid
-        const upTimeMin = 550; // ms
-        const upTimeMax = 1100; // ms
-        const spawnIntervalMin = 380; // ms
-        const spawnIntervalMax = 740; // ms
+        const upTimeMin = 700; // ms (slightly slower)
+        const upTimeMax = 1400; // ms (slightly slower)
+        const spawnIntervalMin = 520; // ms (slightly slower)
+        const spawnIntervalMax = 950; // ms (slightly slower)
         const bombChance = 0.18; // 18% bombs
 
         let score = 0;
@@ -178,13 +189,66 @@
             if (!running || !c || !c.isUp) return;
             c.isUp = false;
             c.mole.classList.remove('up');
+
+            const cellRect = c.cell.getBoundingClientRect();
+            const centerX = cellRect.width / 2;
+            const centerY = cellRect.height * 0.55; // near hole
+
             if (c.isBomb) {
+                // Bomb feedback: explosion + flash + shake + no score
+                addFX(c.cell, 'explode', centerX, centerY);
+                addFlash();
+                shake();
                 lives -= 1; livesEl.textContent = lives;
                 if (lives <= 0) return end();
             } else {
+                // Normal mole feedback: burst + +1 popup
+                addFX(c.cell, 'burst', centerX, centerY);
+                addPopup(c.cell, '+1', centerX, centerY - 10, '#8ef08e');
                 score += 1; scoreEl.textContent = score;
             }
             c.isBomb = false;
+        }
+
+        function addFX(container, kind, x, y) {
+            const fx = document.createElement('div');
+            fx.className = kind;
+            fx.style.left = '0';
+            fx.style.top = '0';
+            fx.style.position = 'absolute';
+            fx.style.pointerEvents = 'none';
+            container.appendChild(fx);
+            // auto remove
+            setTimeout(() => fx.remove(), 450);
+        }
+
+        function addPopup(container, text, x, y, color) {
+            const el = document.createElement('div');
+            el.className = 'popup';
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.color = color || '#ffffff';
+            el.style.opacity = '1';
+            el.style.transition = 'transform 350ms ease-out, opacity 350ms ease-out';
+            container.appendChild(el);
+            requestAnimationFrame(() => {
+                el.style.transform = 'translate(-50%, -90%)';
+                el.style.opacity = '0';
+            });
+            setTimeout(() => el.remove(), 380);
+        }
+
+        function shake() {
+            gridEl.classList.add('shake');
+            setTimeout(() => gridEl.classList.remove('shake'), 260);
+        }
+
+        function addFlash() {
+            const flash = document.createElement('div');
+            flash.className = 'flash';
+            document.querySelector('.wrap').appendChild(flash);
+            setTimeout(() => flash.remove(), 220);
         }
 
         function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }

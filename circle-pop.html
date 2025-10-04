@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Circle Pop</title>
+    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 50% 10%, #1a2347, #0e1627 60%, #0a1120 100%);
+            color: #e8f0ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .wrap {
+            position: relative;
+            width: min(92vw, 92vh * 0.75);
+            height: min(92vh, 92vw * 1.33);
+            max-width: 720px;
+            max-height: 900px;
+            border-radius: 16px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(17,28,49,0.95), rgba(10,16,28,0.95));
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; }
+        .badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; font-weight: 600; color: #bcd3ff; }
+        canvas { 
+            position: absolute; 
+            inset: 18px; 
+            top: 60px; 
+            border-radius: 12px; 
+            background: 
+                radial-gradient(120px 80px at 80% 15%, rgba(255, 193, 93, 0.12), rgba(0,0,0,0) 60%),
+                radial-gradient(120px 80px at 20% 25%, rgba(111, 255, 176, 0.10), rgba(0,0,0,0) 60%),
+                #0c1528; 
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06);
+            width: 100%;
+            height: calc(100% - 78px);
+        }
+        .overlay { position: absolute; inset: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(8,12,22,0.78); border-radius: 12px; }
+        .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); color: #8ecbff; text-align: center; }
+        .subtle { color: #a7b8da; text-align: center; max-width: 520px; }
+        .cta { padding: 12px 18px; background: linear-gradient(180deg, #2b6cff, #1f56d8); color: white; border: 0; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 12px 30px rgba(43,108,255,0.35); cursor: pointer; }
+        .popup { position: absolute; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.45); transform: translate(-50%, -50%); pointer-events: none; }
+        .combo { position: absolute; font-weight: 800; color: #ffd166; text-shadow: 0 2px 6px rgba(0,0,0,0.45); transform: translate(-50%, -50%); pointer-events: none; font-size: 24px; }
+    </style>
+    <meta name="description" content="Circle Pop - A simple, addictive arcade game where you tap circles in sequence for points.">
+</head>
+<body<｜tool▁call▁begin｜>
+    <div class="wrap">
+        <div class="hud">
+            <div class="badge">Score: <span id="score">0</span></div>
+            <div class="badge">Combo: <span id="combo">0</span></div>
+            <div class="badge">Best: <span id="best">0</span></div>
+        </div>
+        <canvas id="game" width="720" height="900" aria-label="Circle Pop game canvas"></canvas>
+
+        <div class="overlay" id="menu">
+            <div class="title">Circle Pop</div>
+            <div class="subtle">Tap circles as they appear! Build combos by popping them quickly. Simple, smooth, addictive.</div>
+            <button class="cta" id="startBtn">Play</button>
+        </div>
+        <div class="overlay" id="gameOver" style="display:none">
+            <div class="title">Game Over</div>
+            <div class="subtle">Score: <span id="final">0</span></div>
+            <button class="cta" id="restartBtn">Restart</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const bestEl = document.getElementById('best');
+        const menuEl = document.getElementById('menu');
+        const gameOverEl = document.getElementById('gameOver');
+        const finalEl = document.getElementById('final');
+
+        let W = 0;
+        let H = 0;
+        let rafId = 0;
+        let running = false;
+        let t = 0;
+        let score = 0;
+        let combo = 0;
+        let best = Number(localStorage.getItem('circle_pop_best') || 0);
+        bestEl.textContent = best;
+
+        let circles = [];
+        let popups = [];
+        let combos = [];
+        let lastSpawn = 0;
+        let spawnRate = 1200; // ms between spawns
+        let circleLifetime = 3000; // ms before circle disappears
+
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Set canvas size to match display size
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            // Set CSS size to match display size
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            // Scale canvas for retina/high DPI
+            ctx.scale(dpr, dpr);
+            
+            // Update game dimensions
+            W = rect.width;
+            H = rect.height;
+        }
+
+        function start() {
+            console.log('Starting game...');
+            resize();
+            reset();
+            menuEl.style.display = 'none';
+            gameOverEl.style.display = 'none';
+            running = true;
+            t = performance.now();
+            loop(t);
+        }
+
+        function end() {
+            running = false;
+            cancelAnimationFrame(rafId);
+            finalEl.textContent = score;
+            if (score > best) { 
+                best = score; 
+                localStorage.setItem('circle_pop_best', String(best)); 
+                bestEl.textContent = best; 
+            }
+            gameOverEl.style.display = 'flex';
+        }
+
+        function reset() {
+            score = 0; 
+            scoreEl.textContent = score;
+            combo = 0; 
+            comboEl.textContent = combo;
+            circles = [];
+            popups = [];
+            combos = [];
+            lastSpawn = 0;
+            spawnRate = 1200;
+            circleLifetime = 3000;
+        }
+
+        function loop(now) {
+            if (!running) return;
+            const dt = Math.min(32, now - t) / 1000; // clamp dt
+            t = now;
+            update(dt, now);
+            draw();
+            rafId = requestAnimationFrame(loop);
+        }
+
+        function update(dt, now) {
+            // Spawn circles
+            if (lastSpawn === 0) lastSpawn = now;
+            if (now - lastSpawn > spawnRate) {
+                lastSpawn = now;
+                spawnCircle();
+                
+                // Gradually increase difficulty
+                spawnRate = Math.max(600, spawnRate * 0.98);
+                circleLifetime = Math.max(1500, circleLifetime * 0.995);
+            }
+
+            // Update circles
+            for (let i = circles.length - 1; i >= 0; i--) {
+                const circle = circles[i];
+                circle.age += dt * 1000;
+                
+                // Remove expired circles
+                if (circle.age > circleLifetime) {
+                    circles.splice(i, 1);
+                    // Reset combo on miss
+                    if (combo > 0) {
+                        addComboAnim(W/2, H/2, combo);
+                        combo = 0;
+                        comboEl.textContent = combo;
+                    }
+                }
+            }
+
+            // Update popup animations
+            for (let i = popups.length - 1; i >= 0; i--) {
+                const popup = popups[i];
+                popup.age += dt * 1000;
+                popup.y -= dt * 100;
+                
+                if (popup.age > 1000) {
+                    popups.splice(i, 1);
+                }
+            }
+
+            // Update combo animations
+            for (let i = combos.length - 1; i >= 0; i--) {
+                const comboAnim = combos[i];
+                comboAnim.age += dt * 1000;
+                comboAnim.scale += dt * 2;
+                
+                if (comboAnim.age > 1500) {
+                    combos.splice(i, 1);
+                }
+            }
+
+            // Auto-end game if too many misses
+            if (circles.length > 8) {
+                end();
+            }
+        }
+
+        function spawnCircle() {
+            const radius = 25 + Math.random() * 30;
+            const x = radius + Math.random() * (W - 2 * radius);
+            const y = radius + Math.random() * (H - 2 * radius);
+            const hue = Math.random() * 360;
+            
+            circles.push({
+                x, y, radius,
+                hue,
+                age: 0,
+                pulse: 0,
+                targetRadius: radius
+            });
+            
+            console.log(`Spawned circle at (${x.toFixed(0)}, ${y.toFixed(0)}), total circles: ${circles.length}`);
+        }
+
+        function addPopup(x, y, text, color = '#ffffff') {
+            popups.push({
+                x, y, text, color,
+                age: 0
+            });
+        }
+
+        function addComboAnim(x, y, comboValue) {
+            combos.push({
+                x, y, 
+                text: `${comboValue}x COMBO!`,
+                age: 0,
+                scale: 0
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Draw circles
+            circles.forEach(circle => {
+                const t = Math.sin(Date.now() * 0.005 + circle.age * 0.01);
+                circle.pulse = t * 0.1 + 1;
+                
+                const x = circle.x;
+                const y = circle.y;
+                const radius = circle.radius * circle.pulse;
+                
+                // Glow effect
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
+                glow.addColorStop(0, `hsla(${circle.hue}, 80%, 70%, 0.4)`);
+                glow.addColorStop(1, `hsla(${circle.hue}, 80%, 70%, 0)`);
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(x, y, radius * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Main circle
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, `hsl(${circle.hue}, 80%, 90%)`);
+                gradient.addColorStop(1, `hsl(${circle.hue}, 80%, 50%)`);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Border
+                ctx.strokeStyle = `hsl(${circle.hue}, 60%, 80%)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw popup animations
+            popups.forEach(popup => {
+                ctx.save();
+                ctx.globalAlpha = 1 - (popup.age / 1000);
+                ctx.fillStyle = popup.color;
+                ctx.font = 'bold 24px Poppins';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(popup.text, popup.x, popup.y);
+                ctx.restore();
+            });
+
+            // Draw combo animations
+            combos.forEach(combo => {
+                ctx.save();
+                ctx.globalAlpha = 1 - (combo.age / 1500);
+                ctx.fillStyle = '#ffd166';
+                ctx.font = `bold ${32 * combo.scale}px Poppins`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(combo.text, combo.x, combo.y);
+                ctx.restore();
+            });
+        }
+
+        function handleClick(x, y) {
+            if (!running) return;
+            
+            // Check collision with circles
+            for (let i = circles.length - 1; i >= 0; i--) {
+                const circle = circles[i];
+                const dx = x - circle.x;
+                const dy = y - circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance <= circle.radius * circle.pulse) {
+                    // Pop the circle
+                    const points = Math.floor(circle.radius);
+                    score += points * (combo + 1);
+                    combo += 1;
+                    
+                    scoreEl.textContent = score;
+                    comboEl.textContent = combo;
+                    
+                    // Add visual feedback
+                    addPopup(circle.x, circle.y, `+${points * (combo + 1)}`, '#61ffa8');
+                    
+                    if (combo > 3) {
+                        addComboAnim(circle.x, circle.y - 40, combo);
+                    }
+                    
+                    circles.splice(i, 1);
+                    return;
+                }
+            }
+        }
+
+        // Input handling
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            handleClick(x, y);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && running) {
+                e.preventDefault();
+            }
+        });
+
+        document.getElementById('startBtn').addEventListener('click', start);
+        document.getElementById('restartBtn').addEventListener('click', start);
+
+        // Initialize
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', resize);
+        
+        // Initial draw
+        draw();
+    })();
+    </script>
+</body>
+</html>

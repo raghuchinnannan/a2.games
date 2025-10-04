@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <title>Orbit Switch</title>
+    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 50% 10%, #121c2e, #0b1426 60%, #081121 100%);
+            color: #e8f0ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .wrap {
+            position: relative;
+            width: min(92vw, 92vh * 0.75);
+            height: min(92vh, 92vw * 1.33);
+            max-width: 720px;
+            max-height: 900px;
+            border-radius: 16px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(17,28,49,0.95), rgba(10,16,28,0.95));
+            box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; }
+        .badge { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; font-weight: 600; color: #bcd3ff; }
+        canvas { 
+            position: absolute; 
+            inset: 18px; 
+            top: 60px; 
+            border-radius: 12px; 
+            background: #0b1426; 
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06);
+            width: 100%;
+            height: calc(100% - 78px);
+        }
+        .overlay { position: absolute; inset: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: rgba(8,12,22,0.78); border-radius: 12px; }
+        .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); color: #8ecbff; text-align: center; }
+        .subtle { color: #a7b8da; text-align: center; max-width: 520px; }
+        .cta { padding: 12px 18px; background: linear-gradient(180deg, #2b6cff, #1f56d8); color: white; border: 0; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 12px 30px rgba(43,108,255,0.35); cursor: pointer; }
+        .controls { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; }
+        .btn { width: 68px; height: 68px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #d8e6ff; display: grid; place-items: center; font-size: 28px; user-select: none; box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06); touch-action: manipulation; }
+        @media (min-width: 920px) { .controls { display: none; } }
+        .popup { position: absolute; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.45); transform: translate(-50%, -50%); pointer-events: none; }
+    </style>
+    <meta name="description" content="Orbit Switch - a minimal one-tap arcade where you switch orbits to dodge hazards and collect rings.">
+</head>
+<body>
+    <div class="wrap">
+        <div class="hud">
+            <div class="badge">Score: <span id="score">0</span></div>
+            <div class="badge">Lives: <span id="lives">3</span></div>
+            <div class="badge">Best: <span id="best">0</span></div>
+        </div>
+        <canvas id="game" width="720" height="900" aria-label="Orbit Switch game canvas"></canvas>
+
+        <div class="overlay" id="menu">
+            <div class="title">Orbit Switch</div>
+            <div class="subtle">Tap/click or press Space to switch between inner and outer orbit. Dodge red hazards, collect cyan rings. Simple, unique, smooth.</div>
+            <button class="cta" id="startBtn">Play</button>
+        </div>
+        <div class="overlay" id="gameOver" style="display:none">
+            <div class="title">Game Over</div>
+            <div class="subtle">Score: <span id="final">0</span></div>
+            <button class="cta" id="restartBtn">Restart</button>
+        </div>
+
+        <div class="controls" aria-hidden="true">
+            <button class="btn" id="btnSwitch">⟲</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const bestEl = document.getElementById('best');
+        const menuEl = document.getElementById('menu');
+        const gameOverEl = document.getElementById('gameOver');
+        const finalEl = document.getElementById('final');
+
+        let W = 0;
+        let H = 0;
+        let rafId = 0;
+        let running = false;
+        let t = 0;
+        let score = 0;
+        let best = Number(localStorage.getItem('orbit_best') || 0);
+        bestEl.textContent = best;
+
+        let center = { x: 0, y: 0 };
+        let innerR = 0;
+        let outerR = 0;
+        const playerSpeedBase = 1.4; // radians per second base (slower start)
+        const hazardSpeedBase = 0.8; // radians per second base (slower start)
+        const spawnEveryBase = 1200; // ms (slower start, less frequent)
+
+        let player = { r: 0, theta: 0, targetR: 0 };
+        let hazards = []; // { r, theta, type: 'haz'|'ring' }
+        let telegraphs = []; // { r, theta, type, activateAt }
+        let lastSpawn = 0;
+        let lives = 3;
+        let invulnUntil = 0;
+        const telegraphDelay = 750; // ms before spawn becomes active
+
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Set canvas size to match display size
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            // Set CSS size to match display size
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            // Scale canvas for retina/high DPI
+            ctx.scale(dpr, dpr);
+            
+            // Update game dimensions
+            W = rect.width;
+            H = rect.height;
+            center = { x: W/2, y: H/2 + 40 };
+            innerR = Math.min(W, H) * 0.22;
+            outerR = innerR * 1.45;
+            
+            // Keep player on nearest orbit on resize
+            if (player.r > 0) {
+                const onOuter = Math.abs(player.targetR - outerR) < Math.abs(player.targetR - innerR);
+                player.r = onOuter ? outerR : innerR;
+                player.targetR = player.r;
+            }
+        }
+
+        function start() {
+            resize();
+            reset();
+            menuEl.style.display = 'none';
+            gameOverEl.style.display = 'none';
+            running = true;
+            t = performance.now();
+            loop(t);
+        }
+
+        function end() {
+            running = false;
+            cancelAnimationFrame(rafId);
+            finalEl.textContent = score;
+            if (score > best) { best = score; localStorage.setItem('orbit_best', String(best)); bestEl.textContent = best; }
+            gameOverEl.style.display = 'flex';
+        }
+
+        function reset() {
+            score = 0; scoreEl.textContent = score;
+            player = { r: innerR, theta: 0, targetR: innerR };
+            hazards = [];
+            telegraphs = [];
+            lastSpawn = 0;
+            lives = 3; livesEl.textContent = lives;
+            invulnUntil = 0;
+        }
+
+        function loop(now) {
+            if (!running) return;
+            const dt = Math.min(32, now - t) / 1000; // clamp dt
+            t = now;
+            update(dt);
+            draw();
+            rafId = requestAnimationFrame(loop);
+        }
+
+        function update(dt) {
+            // gradual difficulty scaling - starts very slow, ramps up slowly
+            const difficulty = 1 + Math.min(2.2, score / 25 * 0.45);
+
+            // player theta progression (speed increases with score)
+            const currentPlayerSpeed = playerSpeedBase * difficulty;
+            player.theta += currentPlayerSpeed * dt;
+            // smoothly lerp radius to target (faster)
+            player.r += (player.targetR - player.r) * Math.min(1, dt * 20);
+
+            // spawn hazards/rings (instant for rings, telegraphed for hazards)
+            // spawn rate also increases with difficulty
+            const currentSpawnRate = spawnEveryBase / difficulty;
+            if (lastSpawn === 0) lastSpawn = performance.now();
+            const ms = performance.now();
+            if (ms - lastSpawn > currentSpawnRate) {
+                lastSpawn = ms;
+                const onOuter = Math.random() < 0.5;
+                const isRing = Math.random() < 0.5;
+                let theta = Math.random() * Math.PI * 2;
+                // avoid spawning exactly on player
+                let attempts = 0;
+                while (Math.abs(normalizeAngle(theta - player.theta)) < 0.55 && attempts < 8) { 
+                    theta = Math.random() * Math.PI * 2; 
+                    attempts++; 
+                }
+                
+                if (isRing) {
+                    // instant spawn for rings
+                    hazards.push({ r: onOuter ? outerR : innerR, theta, type: 'ring' });
+                } else {
+                    // telegraph for hazards (quantized to segments)
+                    const step = (Math.PI * 2) / 16;
+                    theta = Math.round(theta / step) * step;
+                    telegraphs.push({ r: onOuter ? outerR : innerR, theta, type: 'haz', activateAt: ms + telegraphDelay });
+                }
+                // cleanup
+                if (hazards.length > 200) hazards.splice(0, hazards.length - 200);
+                if (telegraphs.length > 200) telegraphs.splice(0, telegraphs.length - 200);
+            }
+
+            // activate telegraphs
+            for (let i = telegraphs.length - 1; i >= 0; i--) {
+                const g = telegraphs[i];
+                if (ms >= g.activateAt) {
+                    hazards.push({ r: g.r, theta: g.theta, type: g.type });
+                    telegraphs.splice(i, 1);
+                }
+            }
+
+            // move hazards opposite direction for contrast (speed also increases with difficulty)
+            const currentHazardSpeed = hazardSpeedBase * difficulty;
+            hazards.forEach(h => { h.theta -= currentHazardSpeed * dt; });
+
+            // collisions
+            for (let i = hazards.length - 1; i >= 0; i--) {
+                const h = hazards[i];
+                if (Math.abs(h.r - player.r) < 8) {
+                    // check angular proximity (smaller hitbox for hazards)
+                    let d = Math.abs(normalizeAngle(h.theta - player.theta));
+                    const hitboxSize = h.type === 'ring' ? 0.23 : 0.18; // smaller hitbox for red hazards
+                    if (d < hitboxSize) {
+                        if (h.type === 'ring') {
+                            score += 1; scoreEl.textContent = score;
+                            hazards.splice(i, 1);
+                        } else {
+                            if (ms < invulnUntil) { continue; }
+                            lives -= 1; livesEl.textContent = lives;
+                            invulnUntil = ms + 1200; // 1.2s invulnerability window
+                            hazards.splice(i, 1);
+                            if (lives <= 0) { return end(); }
+                        }
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // orbits
+            drawOrbit(innerR, 'rgba(142,203,255,0.14)');
+            drawOrbit(outerR, 'rgba(142,203,255,0.14)');
+
+            // telegraphs
+            telegraphs.forEach(g => drawTelegraph(g));
+
+            // hazards and rings
+            hazards.forEach(h => drawHazard(h));
+
+            // player
+            const px = center.x + Math.cos(player.theta) * player.r;
+            const py = center.y + Math.sin(player.theta) * player.r;
+            const grad = ctx.createRadialGradient(px, py, 2, px, py, 14);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(1, '#8ecbff');
+            ctx.fillStyle = grad;
+            if (performance.now() < invulnUntil && Math.floor(performance.now() * 0.01) % 2 === 0) {
+                ctx.globalAlpha = 0.6;
+            }
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+            ctx.globalAlpha = 1;
+
+            // invulnerability ring indicator
+            if (performance.now() < invulnUntil) {
+                ctx.strokeStyle = 'rgba(142,203,255,0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(px, py, 12, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function drawOrbit(r, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawHazard(h) {
+            const x = center.x + Math.cos(h.theta) * h.r;
+            const y = center.y + Math.sin(h.theta) * h.r;
+            if (h.type === 'ring') {
+                ctx.strokeStyle = 'rgba(120,240,255,0.95)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                const flame = ctx.createRadialGradient(x, y, 0, x, y, 14);
+                flame.addColorStop(0, 'rgba(255,120,120,1)');
+                flame.addColorStop(1, 'rgba(255,70,70,0.1)');
+                ctx.fillStyle = flame;
+                ctx.beginPath();
+                ctx.moveTo(x + 0, y - 12);
+                ctx.quadraticCurveTo(x + 10, y, x + 0, y + 12);
+                ctx.quadraticCurveTo(x - 10, y, x + 0, y - 12);
+                ctx.fill();
+            }
+        }
+
+        function drawTelegraph(g) {
+            const now = performance.now();
+            const x = center.x + Math.cos(g.theta) * g.r;
+            const y = center.y + Math.sin(g.theta) * g.r;
+            const total = telegraphDelay;
+            const remain = Math.max(0, g.activateAt - now);
+            const p = 1 - (remain / total); // 0 -> 1
+            const pulse = 0.8 + Math.sin(now * 0.02) * 0.2;
+
+            if (g.type === 'ring') {
+                ctx.strokeStyle = `rgba(120,240,255,${0.35 + 0.4 * pulse})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 10 + 6 * (1 - p), 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = `rgba(255,110,110,${0.35 + 0.4 * pulse})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y - 10 - 5 * (1 - p));
+                ctx.lineTo(x + 10 + 5 * (1 - p), y);
+                ctx.lineTo(x, y + 10 + 5 * (1 - p));
+                ctx.lineTo(x - 10 - 5 * (1 - p), y);
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // countdown arc
+            ctx.strokeStyle = 'rgba(200,210,255,0.35)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 18, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function normalizeAngle(a) {
+            a = a % (Math.PI * 2);
+            if (a < -Math.PI) a += Math.PI * 2;
+            if (a > Math.PI) a -= Math.PI * 2;
+            return a;
+        }
+
+        function switchOrbit() {
+            player.targetR = (Math.abs(player.targetR - innerR) < 1) ? outerR : innerR;
+            // small score tick for skillful timing bonuses (optional): none here for simplicity
+        }
+
+        // input
+        canvas.addEventListener('pointerdown', (e) => { if (running) switchOrbit(); });
+        document.getElementById('btnSwitch').addEventListener('click', () => { if (running) switchOrbit(); });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key.toLowerCase() === 'k') {
+                if (!running) return;
+                e.preventDefault();
+                switchOrbit();
+            }
+        });
+
+        document.getElementById('startBtn').addEventListener('click', start);
+        document.getElementById('restartBtn').addEventListener('click', start);
+
+        // Initialize and set up event listeners
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', resize);
+        
+        // initial draw backdrop
+        draw();
+    })();
+    </script>
+</body>
+</html>
+
+
