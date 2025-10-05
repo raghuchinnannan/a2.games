@@ -100,6 +100,16 @@
             color: white;
             font-size: 16px;
         }
+        #back-button{
+            margin-top: 15px; 
+            cursor: pointer; 
+            padding: 12px; 
+            background: #ff9800; 
+            border: none; 
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -116,6 +126,9 @@
         <button onclick="startGame()">Start Game</button>
     </div>
     <div class="game-board" id="gameBoard"></div>
+    <div id="back-button">
+        <a href="./index.html"><button>Back To Home Page</button></a>
+    </div>
     <div id="winScreen">
         <h2>You Win!</h2>
         <button id="restartBtn" onclick="startGame()">Restart</button>
