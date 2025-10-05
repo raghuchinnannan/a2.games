@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 Puzzle - a2.games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+            text-align: center;
+        }
+        header {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: lowercase;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 50px 20px;
+        }
+        #game-canvas {
+            margin: 30px auto;
+            display: block;
+            background: #faf8ef;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .footer {
+            margin-top: 50px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.9);
+        }
+        .back-link {
+            color: #ff9800;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .reset-btn {
+            background: #ff9800;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .shuffle-btn {
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+        .shuffle-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .reset-btn:hover {
+            background: #e68900;
+            transform: translateY(-2px);
+        }
+        .shuffle-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .controls-toggle {
+            margin: 15px 0;
+        }
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle input {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+        .toggle-label {
+            color: #fff;
+            font-size: 14px;
+        }
+        #game-canvas {
+            max-width: 30vw;
+            max-height: 30vw;
+        }
+        @media (max-width: 720px) {
+            #game-canvas {
+                max-width: 90vw !important;
+                max-height: 90vw !important;
+                touch-action: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="./images/logo.png" width="96" height="96" alt="A2 games logo"><br>
+        a2.games
+    </header>
+    <div class="container">
+        <h1>15 Puzzle</h1>
+        <p>Slide the tiles to arrange them in order from 1 to 15!</p>
+        <button class="reset-btn" onclick="resetGame()">Reset</button>
+        <button class="shuffle-btn" onclick="shuffleTiles()">Shuffle</button>
+        <div class="controls-toggle">
+            <label class="toggle">
+                <input type="checkbox" id="invertControls" onchange="toggleControls()">
+                <span class="toggle-label">Invert Keyboard Controls</span>
+            </label>
+        </div>
+        <canvas id="game-canvas" width="1000" height="1000"></canvas>
+        <a href="index.html" class="back-link">&larr; Back to Home</a>
+    </div>
+    <div class="footer">
+        &copy; 2025 A2 Games. All rights reserved.
+    </div>
+    <script>
+        const size = 4;
+        let board, emptyRow, emptyCol, moves, gameWon, isAnimating, shuffleInProgress;
+        let animations = [];
+        let invertedControls = false;
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        window.addEventListener("keydown", function(e) {
+            if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+
+        function initGame() {
+            board = Array(size).fill().map(() => Array(size).fill(0));
+            // Fill board with numbers 1-15
+            for (let i = 0; i < 15; i++) {
+                board[Math.floor(i / 4)][i % 4] = i + 1;
+            }
+            // Empty space is at bottom-right
+            emptyRow = 3;
+            emptyCol = 3;
+            moves = 0;
+            gameWon = false;
+            isAnimating = false;
+            animations = [];
+            shuffleInProgress = false;
+            draw();
+        }
+
+        function shuffleTiles() {
+            if (shuffleInProgress) return;
+            
+            shuffleInProgress = true;
+            const shuffleBtn = document.querySelector('.shuffle-btn');
+            shuffleBtn.disabled = true;
+            
+            // Start with solved board (1-15 followed by empty)
+            const numbers = [];
+            for (let i = 1; i <= 15; i++) {
+                numbers.push(i);
+            }
+            numbers.push(0); // Add empty tile at the end
+            
+            // Generate random solvable permutation
+            do {
+                // Fisher-Yates shuffle of non-empty tiles only
+                for (let i = 14; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+                }
+                // Randomly place empty tile
+                const emptyIndex = Math.floor(Math.random() * 16);
+                const temp = numbers[15];
+                numbers[15] = numbers[emptyIndex];
+                numbers[emptyIndex] = temp;
+            } while (!isPermutationSolvable(numbers));
+            
+            // Convert to 2D board
+            for (let i = 0; i < numbers.length; i++) {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                board[row][col] = numbers[i];
+                if (numbers[i] === 0) {
+                    emptyRow = row;
+                    emptyCol = col;
+                }
+            }
+            
+            moves = 0;
+            gameWon = false;
+            shuffleBtn.disabled = false;
+            shuffleBtn.textContent = 'Shuffle';
+            shuffleInProgress = false;
+            draw();
+        }
+        
+        function isPermutationSolvable(numbers) {
+            // Verify exactly one empty tile
+            const emptyCount = numbers.filter(x => x === 0).length;
+            if (emptyCount !== 1) return false;
+            
+            let inversions = 0;
+            let emptyRow = Math.floor(numbers.indexOf(0) / 4);
+            
+            // Count inversions, excluding empty tile
+            for (let i = 0; i < numbers.length - 1; i++) {
+                if (numbers[i] === 0) continue;
+                for (let j = i + 1; j < numbers.length; j++) {
+                    if (numbers[j] === 0) continue;
+                    if (numbers[i] > numbers[j]) {
+                        inversions++;
+                    }
+                }
+            }
+            
+            // For 4x4 puzzle:
+            // If empty is on even row from bottom (0-based), inversions must be odd
+            // If empty is on odd row from bottom (0-based), inversions must be even
+            const emptyRowFromBottom = 3 - emptyRow;
+            
+            return (emptyRowFromBottom % 2 === 0) === (inversions % 2 === 1);
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        async function moveTile(direction, countMove = true, isShuffleMove = false) {
+            if (isAnimating && !shuffleInProgress) return;
+            
+            let newRow = emptyRow;
+            let newCol = emptyCol;
+
+            switch (direction) {
+                case 'up':
+                    if (emptyRow > 0) newRow = emptyRow - 1;
+                    break;
+                case 'down':
+                    if (emptyRow < size - 1) newRow = emptyRow + 1;
+                    break;
+                case 'left':
+                    if (emptyCol > 0) newCol = emptyCol - 1;
+                    break;
+                case 'right':
+                    if (emptyCol < size - 1) newCol = emptyCol + 1;
+                    break;
+            }
+
+            if (newRow !== emptyRow || newCol !== emptyCol) {
+                // Always animate moves during shuffle
+                if (shuffleInProgress || !isShuffleMove) {
+                    isAnimating = true;
+                    await animateMove(emptyRow, emptyCol, newRow, newCol);
+                }
+                
+                // Swap tile with empty space
+                board[emptyRow][emptyCol] = board[newRow][newCol];
+                board[newRow][newCol] = 0;
+                emptyRow = newRow;
+                emptyCol = newCol;
+                
+                if (countMove) {
+                    moves++;
+                    checkWin();
+                }
+                
+                if (shuffleInProgress || !isShuffleMove) {
+                    isAnimating = false;
+                }
+                draw();
+            }
+        }
+
+        async function animateMove(fromRow, fromCol, toRow, toCol) {
+            const duration = 100; // Fast linear motion
+            const startTime = performance.now();
+            let animationFrameId;
+            
+            const tileValue = board[toRow][toCol];
+            
+            return new Promise(resolve => {
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Linear motion - no easing
+                    const currentRow = fromRow + (toRow - fromRow) * progress;
+                    const currentCol = fromCol + (toCol - fromCol) * progress;
+                    
+                    // Store animation data with improved state
+                    animations = [{
+                        value: tileValue,
+                        currentRow: currentRow,
+                        currentCol: currentCol,
+                        progress: progress,
+                        fromRow: fromRow,
+                        fromCol: fromCol,
+                        toRow: toRow,
+                        toCol: toCol
+                    }];
+                    
+                    // Only redraw if animation is still active
+                    if (!shuffleInProgress || progress < 1) {
+                        draw();
+                    }
+                    
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    } else {
+                        cancelAnimationFrame(animationFrameId);
+                        animations = [];
+                        resolve();
+                    }
+                }
+                
+                animationFrameId = requestAnimationFrame(animate);
+                
+                // Cleanup on shuffle cancel
+                if (shuffleInProgress) {
+                    window.addEventListener('keydown', function cleanup(e) {
+                        if (e.key === 'Escape') {
+                            cancelAnimationFrame(animationFrameId);
+                            animations = [];
+                            resolve();
+                            window.removeEventListener('keydown', cleanup);
+                        }
+                    });
+                }
+            });
+        }
+
+        function checkWin() {
+            let isWin = true;
+            for (let i = 0; i < 15; i++) {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                if (board[row][col] !== i + 1) {
+                    isWin = false;
+                    break;
+                }
+            }
+            if (isWin) {
+                gameWon = true;
+                // Add confetti effect or celebration
+                setTimeout(() => {
+                    alert('🎉 Congratulations! You solved the puzzle in ' + moves + ' moves!');
+                }, 300);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#f8f9fa');
+            gradient.addColorStop(1, '#e9ecef');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Title and moves with better styling
+            ctx.font = `bold ${canvas.width / 30}px Poppins`;
+            ctx.fillStyle = "#2c3e50";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText("15 PUZZLE", canvas.width / 2, 15);
+            
+            ctx.font = `${canvas.width / 35}px Poppins`;
+            ctx.fillStyle = "#7f8c8d";
+            ctx.fillText(`Moves: ${moves}`, canvas.width / 2, 45);
+
+            // Board alignment
+            const tileSize = canvas.width / 5.5;
+            const gap = 10;
+            const boardSize = size * tileSize + (size - 1) * gap;
+            const offsetX = (canvas.width - boardSize) / 2;
+            const offsetY = 80;
+
+            // Board shadow
+            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            roundRect(ctx, offsetX + 3, offsetY + 3, boardSize, boardSize, 12, true, false);
+
+            // Board background
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = "#dee2e6";
+            ctx.lineWidth = 3;
+            roundRect(ctx, offsetX, offsetY, boardSize, boardSize, 12, true, true);
+
+            // Draw tiles
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const val = board[r][c];
+                    const x = offsetX + c * (tileSize + gap);
+                    const y = offsetY + r * (tileSize + gap);
+
+                    // Check if this tile is being animated
+                    let isAnimating = false;
+                    let animX = x, animY = y;
+                    let animOpacity = 1;
+                    
+                    for (const anim of animations) {
+                        if (anim.value === val) {
+                            isAnimating = true;
+                            animX = offsetX + anim.currentCol * (tileSize + gap);
+                            animY = offsetY + anim.currentRow * (tileSize + gap);
+                            animOpacity = 0.8 + 0.2 * anim.progress;
+                            break;
+                        }
+                    }
+
+                    if (val === 0) {
+                        // Empty space with subtle pattern
+                        ctx.fillStyle = "#f8f9fa";
+                        ctx.strokeStyle = "#dee2e6";
+                        ctx.lineWidth = 2;
+                        
+                        // Add subtle dots pattern
+                        ctx.save();
+                        ctx.globalAlpha = 0.3;
+                        ctx.fillStyle = "#6c757d";
+                        for (let i = 0; i < 3; i++) {
+                            for (let j = 0; j < 3; j++) {
+                                ctx.beginPath();
+                                ctx.arc(x + (i + 1) * tileSize / 4, y + (j + 1) * tileSize / 4, 2, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                        ctx.restore();
+                        
+                        roundRect(ctx, x, y, tileSize, tileSize, 8, true, true);
+                    } else if (!isAnimating) {
+                        // Regular numbered tile
+                        const hue = (val * 24) % 360;
+                        const saturation = 70;
+                        const lightness = 75;
+                        
+                        // Tile gradient
+                        const tileGradient = ctx.createLinearGradient(x, y, x + tileSize, y + tileSize);
+                        tileGradient.addColorStop(0, `hsl(${hue}, ${saturation}%, ${lightness + 10}%)`);
+                        tileGradient.addColorStop(1, `hsl(${hue}, ${saturation}%, ${lightness - 10}%)`);
+                        
+                        ctx.fillStyle = tileGradient;
+                        ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`;
+                        ctx.lineWidth = 2;
+                        roundRect(ctx, x, y, tileSize, tileSize, 8, true, true);
+
+                        // Tile shadow for depth
+                        ctx.save();
+                        ctx.globalAlpha = 0.2;
+                        ctx.fillStyle = "#000";
+                        roundRect(ctx, x + 2, y + 2, tileSize, tileSize, 8, true, false);
+                        ctx.restore();
+
+                        // Number with better styling
+                        ctx.fillStyle = "#2c3e50";
+                        ctx.font = `bold ${tileSize / 2.5}px Poppins`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(val, x + tileSize / 2, y + tileSize / 2);
+                    }
+                }
+            }
+
+            // Draw animated tiles
+            for (const anim of animations) {
+                const x = offsetX + anim.currentCol * (tileSize + gap);
+                const y = offsetY + anim.currentRow * (tileSize + gap);
+                
+                const hue = (anim.value * 24) % 360;
+                const saturation = 70;
+                const lightness = 75;
+                
+                // Animated tile with glow effect
+                ctx.save();
+                ctx.globalAlpha = 0.8 + 0.2 * anim.progress;
+                
+                // Glow effect
+                ctx.shadowColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                ctx.shadowBlur = 10;
+                
+                const tileGradient = ctx.createLinearGradient(x, y, x + tileSize, y + tileSize);
+                tileGradient.addColorStop(0, `hsl(${hue}, ${saturation}%, ${lightness + 15}%)`);
+                tileGradient.addColorStop(1, `hsl(${hue}, ${saturation}%, ${lightness - 5}%)`);
+                
+                ctx.fillStyle = tileGradient;
+                ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`;
+                ctx.lineWidth = 3;
+                roundRect(ctx, x, y, tileSize, tileSize, 8, true, true);
+
+                // Number
+                ctx.fillStyle = "#2c3e50";
+                ctx.font = `bold ${tileSize / 2.5}px Poppins`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(anim.value, x + tileSize / 2, y + tileSize / 2);
+                
+                ctx.restore();
+            }
+
+            // Win message with better styling
+            if (gameWon) {
+                // Celebration background
+                ctx.fillStyle = "rgba(40, 167, 69, 0.95)";
+                roundRect(ctx, offsetX - 20, offsetY + boardSize / 2 - 40, boardSize + 40, 80, 15, true, false);
+                
+                // Celebration text
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 32px Poppins";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("🎉 Congratulations! 🎉", canvas.width / 2, offsetY + boardSize / 2 - 10);
+                
+                ctx.font = "bold 18px Poppins";
+                ctx.fillStyle = "#f8f9fa";
+                ctx.fillText(`Solved in ${moves} moves!`, canvas.width / 2, offsetY + boardSize / 2 + 15);
+            }
+        }
+
+        // Helper for rounded rectangles
+        function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        function toggleControls() {
+            invertedControls = document.getElementById('invertControls').checked;
+        }
+
+        // Mouse click handling
+        canvas.addEventListener('click', async (e) => {
+            if (gameWon || isAnimating || shuffleInProgress) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            // Use the same tile size calculations as in draw()
+            const tileSize = canvas.width / 5;
+            const gap = 8;
+            const boardSize = size * tileSize + (size - 1) * gap;
+            const offsetX = (canvas.width - boardSize) / 2;
+            const offsetY = 80;
+            
+            // Calculate clicked position relative to board
+            const boardX = x - offsetX;
+            const boardY = y - offsetY;
+            
+            // Check if click is within board bounds
+            if (boardX >= 0 && boardX < boardSize && boardY >= 0 && boardY < boardSize) {
+                // Calculate row and column more precisely
+                const col = Math.floor(boardX / (tileSize + gap));
+                const row = Math.floor(boardY / (tileSize + gap));
+                
+                // Verify we're within valid bounds
+                if (row >= 0 && row < size && col >= 0 && col < size) {
+                    // Don't process clicks on the empty tile
+                    if (board[row][col] === 0) return;
+                    
+                    // Check if clicked tile is adjacent to empty space
+                    const isAdjacent = (
+                        (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
+                        (Math.abs(col - emptyCol) === 1 && row === emptyRow)
+                    );
+                    
+                    if (isAdjacent) {
+                        // Determine direction to move the empty tile
+                        let direction;
+                        if (row < emptyRow) direction = 'up';
+                        else if (row > emptyRow) direction = 'down';
+                        else if (col < emptyCol) direction = 'left';
+                        else if (col > emptyCol) direction = 'right';
+                        
+                        if (direction) {
+                            await moveTile(direction);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Keyboard controls
+        window.addEventListener('keydown', async e => {
+            if (gameWon || isAnimating || shuffleInProgress) return;
+            
+            let direction = null;
+            if (invertedControls) {
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        direction = 'right';
+                        break;
+                    case 'ArrowUp':
+                        direction = 'down';
+                        break;
+                    case 'ArrowRight':
+                        direction = 'left';
+                        break;
+                    case 'ArrowDown':
+                        direction = 'up';
+                        break;
+                }
+            } else {
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        direction = 'left';
+                        break;
+                    case 'ArrowUp':
+                        direction = 'up';
+                        break;
+                    case 'ArrowRight':
+                        direction = 'right';
+                        break;
+                    case 'ArrowDown':
+                        direction = 'down';
+                        break;
+                }
+            }
+            
+            if (direction) {
+                e.preventDefault();
+                await moveTile(direction);
+            }
+        });
+
+        // Touch controls for mobile
+        let startX, startY;
+        canvas.addEventListener('touchstart', e => {
+            if (gameWon || isAnimating || shuffleInProgress) return;
+            let t = e.touches[0];
+            startX = t.clientX;
+            startY = t.clientY;
+            e.preventDefault(); // Prevent scrolling
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', async e => {
+            if (gameWon || isAnimating || shuffleInProgress) return;
+            
+            let t = e.changedTouches[0];
+            let dx = t.clientX - startX;
+            let dy = t.clientY - startY;
+            
+            // Minimum swipe distance for better touch control
+            const minSwipeDistance = 20;
+            let direction = null;
+            
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipeDistance) {
+                direction = dx > 0 ? 'left' : 'right'; // right swipe moves tile left
+            } else if (Math.abs(dy) > minSwipeDistance) {
+                direction = dy > 0 ? 'up' : 'down'; // down swipe moves tile up
+            }
+            
+            if (direction) {
+                e.preventDefault();
+                await moveTile(direction);
+            }
+        });
+
+        // Initialize and start game
+        initGame();
+        draw();
+    </script>
+</body>
+</html>
