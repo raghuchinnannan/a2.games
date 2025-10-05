@@ -33,6 +33,14 @@
             overflow: hidden;
         }
 
+        @media (max-width: 768px) {
+            .game-container {
+                height: 100vh;
+                max-width: 100%;
+                border-radius: 0;
+            }
+        }
+
         canvas {
             position: absolute;
             top: 0;
@@ -62,6 +70,14 @@
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
         }
 
+        @media (max-width: 768px) {
+            .score-display {
+                font-size: 18px;
+                top: 10px;
+                right: 10px;
+            }
+        }
+
         .health-bar {
             position: absolute;
             top: 20px;
@@ -72,6 +88,15 @@
             border: 2px solid #0ff;
             border-radius: 10px;
             overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .health-bar {
+                width: 120px;
+                height: 15px;
+                top: 10px;
+                left: 10px;
+            }
         }
 
         .health-fill {
@@ -91,6 +116,13 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
         }
 
+        @media (max-width: 768px) {
+            .wave-display {
+                font-size: 16px;
+                top: 10px;
+            }
+        }
+
         .controls-hint {
             position: absolute;
             bottom: 20px;
@@ -102,6 +134,49 @@
 
         .controls-hint div {
             margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .controls-hint {
+                display: none;
+            }
+        }
+
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            pointer-events: auto;
+            z-index: 100;
+            gap: 15px;
+        }
+
+        .mobile-controls button {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid rgba(0, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .mobile-controls button:active {
+            background: rgba(0, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        #fireBtn {
+            background: rgba(0, 255, 255, 0.3) !important;
+            border-color: #0ff !important;
+            font-weight: bold;
         }
 
         .game-over {
@@ -163,6 +238,12 @@
                 <div>P or Escape: Pause</div>
                 <div>R: Restart</div>
             </div>
+
+            <div class="mobile-controls" id="mobileControls">
+                <button id="leftBtn">◀</button>
+                <button id="fireBtn">🔥</button>
+                <button id="rightBtn">▶</button>
+            </div>
         </div>
 
         <div class="game-over hidden" id="gameOver">
@@ -173,8 +254,13 @@
         </div>
     </div>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    // Mobile controls
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const fireBtn = document.getElementById('fireBtn');
+    const mobileControls = document.getElementById('mobileControls');
 
         function resizeCanvas() {
             const container = document.querySelector('.game-container');
@@ -750,6 +836,43 @@
         });
 
         window.onload = () => {
+            // Show mobile controls if on mobile
+            function isMobile() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            }
+            if (isMobile()) {
+                mobileControls.style.display = 'flex';
+                
+                // Touch events for left button
+                leftBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    keys.a = true;
+                });
+                leftBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    keys.a = false;
+                });
+                
+                // Touch events for right button
+                rightBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    keys.d = true;
+                });
+                rightBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    keys.d = false;
+                });
+                
+                // Fire button
+                fireBtn.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    keys.space = true;
+                });
+                fireBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    keys.space = false;
+                });
+            }
             init();
         };
     </script>
