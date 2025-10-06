@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Game</title>
+    <link rel="stylesheet" href="./css/tic_tac_toe.css">
+</head>
+<body>
+    <div class="msg-container hide">
+        <p id="msg">Winner</p>
+        <button id="new-btn">New Game</button>
+    </div>
+    <main>
+        <h1>Tic Tac Toe</h1>
+        <div class="container">
+            <div class="game">
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+                <button class="box" aria-label="Tic Tac Toe cell"></button>
+            </div>
+        </div>
+        <button id="reset-btn">Reset Game</button>
+    </main>
+
+    <script>
+        let boxes = document.querySelectorAll(".box");
+        let resetBtn = document.getElementById("reset-btn");
+        let newGameBtn = document.querySelector("#new-btn");
+        let msgContainer = document.querySelector(".msg-container");
+        let msg = document.querySelector("#msg");
+        
+        let turnO = true; // player O
+        
+        const winPatterns = [
+            [0,1,2],
+            [0,3,6],
+            [0,4,8],
+            [1,4,7],
+            [2,5,8],
+            [2,4,6],
+            [3,4,5],
+            [6,7,8],
+        ];
+        
+        let cnt = 0;
+        
+        const resetGame = () => {
+            turnO = true;
+            enableBoxes();
+            msgContainer.classList.add("hide");
+            cnt = 0;
+        };
+        
+        boxes.forEach((box) => {
+            box.addEventListener("click", () => {
+                if (turnO) {
+                    box.innerText = "O";
+                    box.classList.add("o-turn");
+                    box.classList.remove("x-turn");
+                    turnO = false;
+                } else {
+                    box.innerText = "X";
+                    box.classList.add("x-turn");
+                    box.classList.remove("o-turn");
+                    turnO = true;
+                }
+                cnt += 1;
+                box.disabled = true;
+                checkWinner();
+                if (cnt === 9 && msgContainer.classList.contains("hide")) {
+                    msg.innerText = "Draw, please click on the new button";
+                    msgContainer.classList.remove("hide");
+                }
+            });
+        });
+        
+        const disableBoxes = () => {
+            for (let box of boxes) {
+                box.disabled = true;
+            }
+        }
+        
+        const enableBoxes = () => {
+            for (let box of boxes) {
+                box.disabled = false;
+                box.innerText = "";
+                box.classList.remove("o-turn", "x-turn");
+            }
+        }
+        
+        const showWinner = (winner) => {
+            msg.innerText = `Congratulations, Winner is ${winner}`;
+            msgContainer.classList.remove("hide");
+            disableBoxes();
+        }
+        
+        const checkWinner = () => {
+            for (let pattern of winPatterns) {
+                let post1Val = boxes[pattern[0]].innerText;
+                let post2Val = boxes[pattern[1]].innerText;
+                let post3Val = boxes[pattern[2]].innerText;
+                if (post1Val != "" && post2Val != "" && post3Val != "") {
+                    if (post1Val == post2Val && post2Val == post3Val) {
+                        showWinner(post1Val);
+                    }
+                }
+            }
+        };
+        
+        newGameBtn.addEventListener("click", resetGame);
+        resetBtn.addEventListener("click", resetGame);
+    </script>
+</body>
+</html>
