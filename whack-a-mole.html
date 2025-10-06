@@ -32,10 +32,17 @@
         .grid { position: absolute; inset: 18px; top: 70px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 14px; }
         .cell { position: relative; background: #0c1528; border-radius: 12px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06); display: grid; place-items: center; overflow: hidden; }
         .hole { position: absolute; width: 70%; height: 20%; bottom: 10%; background: radial-gradient(ellipse at center, #0b1222 0%, #070c18 60%, #060a12 100%); border-radius: 50%; filter: blur(0.2px); }
-        .mole { position: absolute; bottom: 10%; width: 52%; aspect-ratio: 1/1; background: linear-gradient(180deg, #ffd166, #ffb347); border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.15s ease; display: grid; place-items: center; }
+        .mole { position: absolute; bottom: 10%; width: 52%; aspect-ratio: 1/1; background: linear-gradient(180deg, #ffd166, #ffb347); border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); transform: translateY(100%) rotate(0deg) scale(1); transition: transform 0.15s ease; display: grid; place-items: center; }
         .mole.eye { display: none; }
-        .mole.up { transform: translateY(0%); }
+        .mole.up { animation: bounceRotate 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
         .mole.bad { background: linear-gradient(180deg, #ff7a7a, #ff5b5b); }
+        .mole.life { background: linear-gradient(180deg, #7affb3, #4ade80); box-shadow: 0 0 15px rgba(74, 222, 128, 0.6); }
+        @keyframes bounceRotate {
+            0% { transform: translateY(100%) rotate(0deg) scale(1); }
+            60% { transform: translateY(-8%) rotate(15deg) scale(1.08); }
+            80% { transform: translateY(2%) rotate(-8deg) scale(0.98); }
+            100% { transform: translateY(0%) rotate(0deg) scale(1); }
+        }
         .popup { position: absolute; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.45); transform: translate(-50%, -50%); pointer-events: none; }
         .burst, .explode { position: absolute; inset: 0; pointer-events: none; }
         .burst::before, .explode::before { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); }
@@ -96,6 +103,7 @@
         const spawnIntervalMin = 520; // ms (slightly slower)
         const spawnIntervalMax = 950; // ms (slightly slower)
         const bombChance = 0.18; // 18% bombs
+        const lifeChance = 0.07; // 7% life moles
 
         let score = 0;
         let best = Number(localStorage.getItem('wam_best') || 0);
@@ -119,7 +127,7 @@
                 cell.appendChild(hole);
                 cell.appendChild(mole);
                 gridEl.appendChild(cell);
-                cells.push({ cell, mole, isUp: false, isBomb: false });
+                cells.push({ cell, mole, isUp: false, type: 'normal' }); // type: 'normal', 'bomb', 'life'
 
                 // click/tap handling
                 mole.addEventListener('pointerdown', () => whack(i));
@@ -129,7 +137,7 @@
         function reset() {
             clearTimers();
             score = 0; lives = 3; scoreEl.textContent = score; livesEl.textContent = lives;
-            cells.forEach(c => { c.mole.classList.remove('up', 'bad'); c.isUp = false; c.isBomb = false; });
+            cells.forEach(c => { c.mole.classList.remove('up', 'bad', 'life'); c.isUp = false; c.type = 'normal'; });
             currentIndex = 0;
         }
 
@@ -164,13 +172,23 @@
             const choices = cells.map((_, idx) => idx).filter(i => !upIndices.includes(i));
             if (choices.length === 0) return;
             const idx = choices[Math.floor(Math.random() * choices.length)];
-            const isBomb = Math.random() < bombChance;
+    
+            // Determine mole type
+            const rand1 = Math.random();
+            let moleType = 'normal';
+            if (rand1 < bombChance) {
+                moleType = 'bomb';
+            } else if (rand1 < bombChance + lifeChance) {
+                moleType = 'life';
+            }
+    
             const upTime = rand(upTimeMin, upTimeMax);
             const c = cells[idx];
             c.isUp = true;
-            c.isBomb = isBomb;
+            c.type = moleType;
             c.mole.classList.add('up');
-            c.mole.classList.toggle('bad', isBomb);
+            c.mole.classList.toggle('bad', moleType === 'bomb');
+            c.mole.classList.toggle('life', moleType === 'life');
 
             timers.push(setTimeout(() => hide(idx), upTime));
         }
@@ -179,34 +197,39 @@
             const c = cells[idx];
             if (!c) return;
             c.isUp = false;
-            c.mole.classList.remove('up');
-            c.isBomb = false;
+            c.mole.classList.remove('up', 'bad', 'life');
+            c.type = 'normal';
         }
 
         function whack(idx) {
             const c = cells[idx];
             if (!running || !c || !c.isUp) return;
             c.isUp = false;
-            c.mole.classList.remove('up');
+            c.mole.classList.remove('up', 'bad', 'life');
 
             const cellRect = c.cell.getBoundingClientRect();
             const centerX = cellRect.width / 2;
             const centerY = cellRect.height * 0.55; // near hole
 
-            if (c.isBomb) {
-                // Bomb feedback: explosion + flash + shake + no score
+            if (c.type === 'bomb') {
+                // Bomb feedback: explosion + flash + shake - lose life
                 addFX(c.cell, 'explode', centerX, centerY);
                 addFlash();
                 shake();
                 lives -= 1; livesEl.textContent = lives;
                 if (lives <= 0) return end();
+            } else if (c.type === 'life') {
+                // Life mole feedback: burst + +1 life popup
+                addFX(c.cell, 'burst', centerX, centerY);
+                addPopup(c.cell, '+1 ❤', centerX, centerY - 10, '#7affb3');
+                lives += 1; livesEl.textContent = lives;
             } else {
-                // Normal mole feedback: burst + +1 popup
+                // Normal mole feedback: burst + +1 score popup
                 addFX(c.cell, 'burst', centerX, centerY);
                 addPopup(c.cell, '+1', centerX, centerY - 10, '#8ef08e');
                 score += 1; scoreEl.textContent = score;
             }
-            c.isBomb = false;
+            c.type = 'normal';
         }
 
         function addFX(container, kind, x, y) {
