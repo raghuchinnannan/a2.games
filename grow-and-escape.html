@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Grow & Escape — Responsive Kaboom.js</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <style>
+    html, body { height: 100%; margin: 0; background: #0f0f17; }
+    canvas { display: block; margin: 0 auto; touch-action: none; }
+  </style>
+</head>
+<body>
+<script type="module">
+import kaboom from "https://unpkg.com/kaboom@3000.1.17/dist/kaboom.mjs";
+
+const k = kaboom({
+  width: window.innerWidth,
+  height: window.innerHeight,
+  background: [15, 15, 23],
+  letterbox: false,
+});
+
+// ====== Logical grid ======
+const COLS = 23;  // use odd numbers for nicer mazes
+const ROWS = 23;
+
+// ====== Colors ======
+const COLORS = {
+  wall: k.Color.fromArray([40, 44, 65]),
+  floor: k.Color.fromArray([21, 22, 33]),
+  playerHead: k.Color.fromArray([255, 212, 99]),
+  playerBody: k.Color.fromArray([255, 168, 76]),
+  exit: k.Color.fromArray([102, 255, 204]),
+  text: k.Color.fromArray([220, 224, 255]),
+  hint: k.Color.fromArray([150, 160, 190]),
+  panel: k.Color.fromArray([20, 20, 28]),
+};
+
+// ====== Responsive layout ======
+let CELL = 24;
+let BOARD_W = COLS * CELL;
+let BOARD_H = ROWS * CELL;
+let MARGIN = 18;
+let HUD_H = 84;
+let ORIGIN = k.vec2(0, 0);
+
+// translate grid to pixel center
+const toPixel = (gx, gy) => ORIGIN.add(k.vec2(gx * CELL + CELL / 2, gy * CELL + CELL / 2));
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(k.rand(0, i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+// ====== Maze generation ======
+function generateMaze(cols, rows) {
+  const grid = Array.from({ length: rows }, () => Array(cols).fill(1)); // 1 wall, 0 path
+  const inBounds = (x, y) => x > 0 && x < cols - 1 && y > 0 && y < rows - 1;
+
+  function carve(x, y) {
+    grid[y][x] = 0;
+    const dirs = shuffle([[2,0],[-2,0],[0,2],[0,-2]]);
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (inBounds(nx, ny) && grid[ny][nx] === 1) {
+        grid[y + dy/2][x + dx/2] = 0; // open between
+        carve(nx, ny);
+      }
+    }
+  }
+
+  carve(1, 1);
+  // ensure exit area near bottom-right
+  grid[rows - 2][cols - 2] = 0;
+  grid[rows - 2][cols - 3] = 0;
+  grid[rows - 3][cols - 2] = 0;
+  return grid;
+}
+
+// ====== Game State ======
+let grid, start, exitPos;
+let body = [];        // array of vec2 (head is last)
+let segments = [];    // visual nodes for body
+let busy = false;     // movement lock
+let dpadNodes = [];   // on-screen controls
+
+// ====== Layout & Redraw ======
+function computeLayout() {
+  const W = k.width();
+  const H = k.height();
+  const dpadReserve = Math.min(180, Math.floor(H * 0.28)); // space for D-pad
+  const availableW = W - MARGIN * 2;
+  const availableH = H - HUD_H - MARGIN * 2 - dpadReserve;
+
+  const rawCell = Math.floor(Math.min(availableW / COLS, availableH / ROWS));
+  CELL = clamp(rawCell, 14, 48);
+
+  BOARD_W = COLS * CELL;
+  BOARD_H = ROWS * CELL;
+
+  ORIGIN = k.vec2(
+    Math.floor((W - BOARD_W) / 2),
+    Math.floor((H - dpadReserve - BOARD_H) / 2 + HUD_H * 0.5)
+  );
+}
+
+function redrawAll() {
+  k.destroyAll("tile");
+  k.destroyAll("segment");
+  k.destroyAll("hud");
+  k.destroyAll("modal");
+  k.destroyAll("dpad");
+
+  drawBoard();
+  drawPlayer();
+  drawHUD();
+  drawDPad();
+}
+
+// ====== Draw ======
+function drawBoard() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      k.add([
+        k.rect(CELL - 2, CELL - 2, { radius: Math.max(4, Math.floor(CELL * 0.22)) }),
+        k.pos(toPixel(x, y)),
+        k.anchor("center"),
+        k.color(COLORS.floor),
+        k.opacity(0.75),
+        "tile",
+      ]);
+
+      if (grid[y][x] === 1) {
+        k.add([
+          k.rect(CELL - 2, CELL - 2, { radius: Math.max(4, Math.floor(CELL * 0.22)) }),
+          k.pos(toPixel(x, y)),
+          k.anchor("center"),
+          k.color(COLORS.wall),
+          k.area(),
+          "tile", "wall",
+          { gx: x, gy: y },
+        ]);
+      }
+    }
+  }
+
+  // Exit
+  k.add([
+    k.rect(CELL - 6, CELL - 6, { radius: Math.max(4, Math.floor(CELL * 0.25)) }),
+    k.pos(toPixel(exitPos.x, exitPos.y)),
+    k.anchor("center"),
+    k.color(COLORS.exit),
+    k.area(),
+    "tile", "exit",
+  ]);
+}
+
+function drawPlayer() {
+  for (const s of segments) s.destroy();
+  segments = [];
+
+  for (let i = 0; i < body.length; i++) {
+    const p = body[i];
+    const isHead = i === body.length - 1;
+    const r = Math.max(6, Math.floor((isHead ? CELL - 6 : CELL - 10)));
+    segments.push(k.add([
+      k.rect(r, r, { radius: Math.max(4, Math.floor(CELL * 0.3)) }),
+      k.pos(toPixel(p.x, p.y)),
+      k.anchor("center"),
+      k.color(isHead ? COLORS.playerHead : COLORS.playerBody),
+      k.outline(2, k.Color.fromArray([0, 0, 0])),
+      k.z(10),
+      "segment",
+      { gx: p.x, gy: p.y, isHead },
+    ]));
+  }
+}
+
+function drawHUD() {
+  // Double-tap/clickable title (restart)
+  const title = k.add([
+    k.text("Grow & Escape", { size: Math.floor(clamp(CELL * 0.9, 16, 28)) }),
+    k.pos(ORIGIN.x, ORIGIN.y - Math.max(12, Math.floor(CELL * 0.5))),
+    k.anchor("left"),
+    k.color(COLORS.text),
+    k.area(),                 // make tappable
+    k.cursor("pointer"),
+    "hud",
+    { lastTap: 0 },
+  ]);
+
+  title.onClick(() => {
+    const now = k.time();
+    if (now - title.lastTap < 0.35) {
+      resetGame();
+      title.lastTap = 0;
+    } else {
+      title.lastTap = now;
+    }
+  });
+
+  // Controls hint
+  k.add([
+    k.text("Swipe / D-pad • WASD/Arrows • Z undo • R restart",
+      { size: Math.floor(clamp(CELL * 0.5, 10, 16)) }),
+    k.pos(ORIGIN.x, ORIGIN.y - Math.max(28, Math.floor(CELL * 1.2))),
+    k.anchor("left"),
+    k.color(COLORS.hint),
+    "hud",
+  ]);
+
+  // Length label (auto-updates)
+  k.add([
+    k.text(`Length: ${body.length}`, { size: Math.floor(clamp(CELL * 0.55, 12, 18)) }),
+    k.pos(ORIGIN.x + BOARD_W, ORIGIN.y - Math.max(12, Math.floor(CELL * 0.5))),
+    k.anchor("right"),
+    k.color(COLORS.hint),
+    {
+      update() { this.text = `Length: ${body.length}`; },
+    },
+    "hud",
+  ]);
+
+  // ↻ Restart button (explicit tap target)
+  const btnW = Math.max(64, Math.floor(CELL * 3.0));
+  const btnH = Math.max(28, Math.floor(CELL * 1.2));
+  const restart = k.add([
+    k.rect(btnW, btnH, { radius: Math.floor(btnH * 0.4) }),
+    k.pos(ORIGIN.x + BOARD_W - btnW, ORIGIN.y - Math.max(12, Math.floor(CELL * 0.5)) - btnH - 6),
+    k.anchor("left"),
+    k.color(k.Color.fromArray([35, 38, 55])),
+    k.area(),
+    k.cursor("pointer"),
+    "hud",
+  ]);
+  k.add([
+    k.text("↻ Restart", { size: Math.floor(clamp(CELL * 0.6, 12, 18)) }),
+    k.pos(restart.pos.x + btnW / 2, restart.pos.y + btnH / 2),
+    k.anchor("center"),
+    k.color(COLORS.text),
+    "hud",
+  ]);
+  restart.onClick(() => resetGame());
+}
+
+function drawDPad() {
+  dpadNodes.forEach(n => n.destroy());
+  dpadNodes = [];
+
+  const baseSize = clamp(Math.floor(k.width() * 0.18), 90, 140);
+  const btnR = Math.floor(baseSize / 2.6);
+  const gap = Math.floor(btnR * 0.25);
+  const cx = Math.floor(k.width() * 0.18);
+  const cy = Math.floor(k.height() - baseSize * 0.9);
+
+  const mkBtn = (dx, dy, label) => {
+    const pos = k.vec2(cx + (btnR + gap) * dx, cy + (btnR + gap) * dy);
+    const node = k.add([
+      k.circle(btnR),
+      k.pos(pos),
+      k.color(k.Color.fromArray([35, 38, 55])),
+      k.opacity(0.85),
+      k.area(),
+      k.anchor("center"),
+      k.z(50),
+      "dpad",
+      { dir: k.vec2(dx, dy) },
+    ]);
+    k.add([
+      k.text(label, { size: Math.floor(btnR * 0.9) }),
+      k.pos(pos),
+      k.anchor("center"),
+      k.color(COLORS.text),
+      k.z(51),
+      "dpad",
+    ]);
+    node.onClick(() => tryMove(node.dir));
+    dpadNodes.push(node);
+  };
+
+  mkBtn(0, -1, "↑");
+  mkBtn(-1, 0, "←");
+  mkBtn(1, 0, "→");
+  mkBtn(0, 1, "↓");
+}
+
+// ====== Collision / End ======
+function cellBlocked(gx, gy) {
+  if (gx < 0 || gy < 0 || gx >= COLS || gy >= ROWS) return true;
+  if (grid[gy][gx] === 1) return true;
+  const head = body[body.length - 1];
+  // collide with past body segments, not the head's current tile
+  return body.some(p => p.x === gx && p.y === gy && !(p.x === head.x && p.y === head.y));
+}
+const isExit = (gx, gy) => gx === exitPos.x && gy === exitPos.y;
+
+function modal(textBig, textSmall) {
+  const panel = k.add([
+    k.rect(BOARD_W, Math.max(100, Math.floor(CELL * 4)), { radius: Math.floor(CELL * 0.45) }),
+    k.pos(ORIGIN.x + BOARD_W/2, ORIGIN.y + BOARD_H/2),
+    k.anchor("center"),
+    k.color(COLORS.panel),
+    k.opacity(0.92),
+    k.z(100),
+    "modal",
+  ]);
+  k.add([
+    k.text(textBig, { size: clamp(Math.floor(CELL * 1.3), 20, 40), width: BOARD_W - 32 }),
+    k.pos(panel.pos.x, panel.pos.y - Math.max(12, Math.floor(CELL * 0.5))),
+    k.anchor("center"),
+    k.color(COLORS.text),
+    k.z(101),
+    "modal",
+  ]);
+  k.add([
+    k.text(textSmall, { size: clamp(Math.floor(CELL * 0.8), 12, 20) }),
+    k.pos(panel.pos.x, panel.pos.y + Math.max(16, Math.floor(CELL * 0.7))),
+    k.anchor("center"),
+    k.color(COLORS.hint),
+    k.z(101),
+    "modal",
+  ]);
+}
+
+function endGame(win) {
+  busy = true;
+  if (win) {
+    modal("YOU ESCAPED!", "New maze in 1.5s • Tap ↻ or title twice to restart");
+    k.wait(1.5, () => resetGame());
+  } else {
+    modal("BLOCKED!", "Tap/Reload ↻ to restart");
+  }
+}
+
+// ====== Moves / Undo ======
+function tryMove(dir) {
+  if (busy) return;
+  busy = true;
+
+  const head = body[body.length - 1];
+  const nx = head.x + dir.x;
+  const ny = head.y + dir.y;
+
+  if (cellBlocked(nx, ny)) {
+    endGame(false);
+    return;
+  }
+
+  // grow by adding new head (tail stays)
+  body.push(k.vec2(nx, ny));
+  drawPlayer();
+
+  if (isExit(nx, ny)) {
+    endGame(true);
+    return;
+  }
+
+  k.wait(0.06, () => { busy = false; });
+}
+
+function undo() {
+  if (busy) return;
+  if (body.length <= 1) return;
+  body.pop();
+  drawPlayer();
+}
+
+// ====== Input: Keyboard ======
+const INPUTS = {
+  "left":  k.vec2(-1, 0), "a": k.vec2(-1, 0),
+  "right": k.vec2(1, 0),  "d": k.vec2(1, 0),
+  "up":    k.vec2(0, -1), "w": k.vec2(0, -1),
+  "down":  k.vec2(0, 1),  "s": k.vec2(0, 1),
+};
+for (const key in INPUTS) k.onKeyPress(key, () => tryMove(INPUTS[key]));
+k.onKeyPress("z", () => undo());
+k.onKeyPress("r", () => resetGame());
+k.onKeyPress("R", () => resetGame()); // extra safety
+
+// ====== Input: Touch (swipe) ======
+let touchStart = null;
+k.onTouchStart((id, pos) => { touchStart = pos.clone(); });
+k.onTouchEnd((id, pos) => {
+  if (!touchStart) return;
+  const dx = pos.x - touchStart.x;
+  const dy = pos.y - touchStart.y;
+  const absX = Math.abs(dx), absY = Math.abs(dy);
+  const threshold = Math.max(24, Math.floor(CELL * 0.8));
+  if (absX < threshold && absY < threshold) { touchStart = null; return; }
+  if (absX > absY) tryMove(k.vec2(dx > 0 ? 1 : -1, 0));
+  else             tryMove(k.vec2(0, dy > 0 ? 1 : -1));
+  touchStart = null;
+});
+
+// ====== Resize ======
+function onResize() {
+  k.resize(window.innerWidth, window.innerHeight);
+  computeLayout();
+  redrawAll();
+}
+k.onResize(onResize);
+window.addEventListener("orientationchange", () => setTimeout(onResize, 150));
+
+// ====== Init ======
+function resetGame() {
+  busy = false;
+  grid = generateMaze(COLS, ROWS);
+  start = k.vec2(1, 1);
+  exitPos = k.vec2(COLS - 2, ROWS - 2);
+  body = [ start.clone() ];
+  computeLayout();
+  redrawAll();
+}
+
+resetGame();
+</script>
+</body>
+</html>
