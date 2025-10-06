@@ -449,6 +449,9 @@
             
             const gameWrap = document.querySelector('.game-wrap');
             gameWrap.appendChild(explosion);
+
+            const audio = new Audio('/sounds/bombs/bomb_explosion_8bit.wav');
+            audio.play();
             
             // Remove after animation completes
             setTimeout(() => explosion.remove(), 450);

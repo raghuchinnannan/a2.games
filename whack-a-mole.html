@@ -213,6 +213,8 @@
 
             if (c.type === 'bomb') {
                 // Bomb feedback: explosion + flash + shake - lose life
+                const audio = new Audio('/sounds/bombs/bomb_explosion_8bit.wav');
+                audio.play();
                 addFX(c.cell, 'explode', centerX, centerY);
                 addFlash();
                 shake();
