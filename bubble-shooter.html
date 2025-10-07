@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Shooter Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Gilroy", Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        #main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background-color: rgb(166, 224, 166);
+        }
+        
+        #panel {
+            overflow: hidden;
+            width: 80%;
+            height: 80%;
+            background-color: #fff;
+            border-radius: 10px;
+        }
+        
+        #ptop {
+            padding: 0px 20%;
+            justify-content: space-between;
+            display: flex;
+            color: #fff;
+            width: 100%;
+            height: 100px;
+            background-color: rgb(72, 141, 72);
+        }
+        
+        .elem {
+            display: flex;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .elem h2 {
+            font-weight: 500;
+        }
+        
+        .box {
+            color: black;
+            font-weight: 600;
+            font-size: 20px;
+            padding: 10px 20px;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        
+        #pbtm {
+            padding: 20px;
+            width: 100%;
+            height: calc(100% - 100px);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .bubble {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background-color: rgb(72, 160, 72);
+            border-radius: 50%;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .bubble:hover {
+            cursor: pointer;
+            background-color: rgb(95, 93, 93);
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <div id="panel">
+            <div id="ptop">
+                <div class="elem">
+                    <h2>Hit</h2>
+                    <div id="hitval" class="box">5</div>
+                </div>
+                <div class="elem">
+                    <h2>Timer</h2>
+                    <div id="timerval" class="box">60</div>
+                </div>
+                <div class="elem">
+                    <h2>Score</h2>   
+                    <div id="scoreval" class="box">0</div>
+                </div>
+            </div>
+            <div id="pbtm">
+                <div class="bubble">5</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var timer = 60;
+        var score = 0;
+        var hitrn = 0;
+        
+        function makeBubble() {
+            var clutter = '';
+            for (var i = 1; i <= 102; i++) {
+                var rn = Math.floor(Math.random() * 10);
+                clutter += `<div class="bubble">${rn}</div>`;
+            }
+            var pbtmElement = document.querySelector("#pbtm");
+            if (pbtmElement) {
+                pbtmElement.innerHTML = clutter;
+            } else {
+                console.error("Element with ID 'pbtm' not found.");
+            }
+        }
+        
+        function runTimer() {
+            var timerinterval = setInterval(function () {
+                if (timer > 0) {
+                    timer--;
+                    document.querySelector("#timerval").textContent = timer;
+                } else {
+                    clearInterval(timerinterval);
+                    document.querySelector("#pbtm").innerHTML = `<h1 style="margin-top: 100px; text-align: center; width: 100%;">Game Over! Final Score: ${score}</h1>`;
+                }
+            }, 1000);
+        }
+        
+        function gethit() {
+            hitrn = Math.floor(Math.random() * 10);
+            document.querySelector("#hitval").textContent = hitrn;
+        }
+        
+        function increaseScore() {
+            score += 10;
+            document.querySelector("#scoreval").textContent = score;
+        }
+        
+        document.querySelector("#pbtm").addEventListener("click", function(dets) {
+            var clickednum = Number(dets.target.textContent);
+            if (clickednum == hitrn) {
+                increaseScore();
+                makeBubble();
+                gethit();
+            }
+        });
+        
+        runTimer();
+        makeBubble();
+        gethit();
+    </script>
+</body>
+</html>
