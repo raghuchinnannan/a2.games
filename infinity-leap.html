@@ -48,12 +48,23 @@
             border: none;
             border-radius: 5px;
         }
+        #back{
+            padding: 10px 20px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            background-color: #009DD1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
         #controls {
             position: absolute;
             bottom: 20px;
             left: 20px;
             color: white;
-            font-size: 16px;
+            font-size: 20px;
+            font-weight: 600;
             pointer-events: none;
             z-index: 10;
         }
@@ -138,6 +149,7 @@
         <h2>Game Over!</h2>
         <p>Your score: <span id="finalScore">0</span></p>
         <button id="restartButton">Play Again</button>
+        <a href="./index.html"><button id="back">Back To Home Page</button></a>
     </div>
     <canvas id="gameCanvas"></canvas>
 
