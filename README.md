@@ -1,6 +1,6 @@
 # a2.games
 
-a2.games is a free opensource gaming website by [Raghu Chinnannan](https://raghu.ch) built using KaboomJS. 
+a2.games is a free opensource gaming website by [Raghu Chinnannan](https://raghu.ch) built primarily using KaboomJS and vanilla JS.
 
 Primarily built as a fun project to engage my kids by showing their faces on the games and also as an oppurtunity to learn KaboomJS.
 
@@ -17,6 +17,7 @@ Luckily, I was able to get this cool domain for about ₹1200 (~$15) and it's li
 
 ### Contributing
 - Contributing is as simple as sending a PR. 
+- So far most games are built using Kaboom.js and vanilla js, but you are free to use any library as long as it's simple and can be served as a static site.
 
 ## Disclaimer
 - Don't tell me the design/code/game sucks, because I already know it.
