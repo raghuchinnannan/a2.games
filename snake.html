@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Snake Classic</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
             background: radial-gradient(1200px 600px at 50% 10%, #1b2a4a, #0e1627 60%, #0b0f1b 100%);
@@ -18,24 +24,27 @@
             margin: 0;
             padding: 0;
         }
+
         .game-wrap {
             position: relative;
             width: min(85vh, 85vw, 720px);
             height: min(85vh, 85vw, 720px);
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
-            background: linear-gradient(180deg, rgba(19,32,56,0.9), rgba(10,16,28,0.9));
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            background: linear-gradient(180deg, rgba(19, 32, 56, 0.9), rgba(10, 16, 28, 0.9));
             padding: 18px;
         }
+
         canvas {
             width: 100%;
             height: 100%;
             display: block;
             border-radius: 12px;
             background: repeating-linear-gradient(90deg, #0f1a30 0 32px, #0e182c 32px 64px),
-                        repeating-linear-gradient(0deg,  #0f1a30 0 32px, #0e182c 32px 64px);
-            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06);
+                repeating-linear-gradient(0deg, #0f1a30 0 32px, #0e182c 32px 64px);
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.06);
         }
+
         .hud {
             position: absolute;
             top: -60px;
@@ -47,15 +56,17 @@
             gap: 10px;
             pointer-events: none;
         }
+
         .badge {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 10px;
             padding: 8px 12px;
             font-weight: 600;
             color: #bcd3ff;
-            text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
         }
+
         .joystick-container {
             position: absolute;
             bottom: -140px;
@@ -65,24 +76,26 @@
             height: 120px;
             pointer-events: none;
         }
+
         .joystick-base {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: rgba(255,255,255,0.08);
-            border: 2px solid rgba(255,255,255,0.15);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
             position: relative;
             pointer-events: auto;
             touch-action: none;
         }
+
         .joystick-knob {
             width: 50px;
             height: 50px;
             border-radius: 50%;
             background: linear-gradient(135deg, #4a9eff, #2b6cff);
-            border: 2px solid rgba(255,255,255,0.2);
-            box-shadow: 0 4px 12px rgba(43,108,255,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(43, 108, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
             position: absolute;
             top: 50%;
             left: 50%;
@@ -90,9 +103,11 @@
             transition: transform 0.1s ease;
             cursor: pointer;
         }
+
         .joystick-knob:active {
             transform: translate(-50%, -50%) scale(0.95);
         }
+
         .overlay {
             position: absolute;
             inset: 0;
@@ -101,39 +116,62 @@
             justify-content: center;
             flex-direction: column;
             gap: 16px;
-            background: linear-gradient(180deg, rgba(8,12,22,0.78), rgba(8,12,22,0.78));
+            background: linear-gradient(180deg, rgba(8, 12, 22, 0.78), rgba(8, 12, 22, 0.78));
             border-radius: 12px;
         }
-        .title { font-weight: 800; font-size: clamp(24px, 4vw, 40px); letter-spacing: 0.5px; color: #8ecbff; }
-        .subtle { color: #a7b8da; opacity: .9; }
+
+        .title {
+            font-weight: 800;
+            font-size: clamp(24px, 4vw, 40px);
+            letter-spacing: 0.5px;
+            color: #8ecbff;
+        }
+
+        .subtle {
+            color: #a7b8da;
+            opacity: .9;
+        }
+
         .cta {
             pointer-events: auto;
             padding: 12px 18px;
             background: linear-gradient(180deg, #2b6cff, #1f56d8);
-            color: white; border: 0; border-radius: 10px; font-weight: 700; font-size: 16px;
-            box-shadow: 0 12px 30px rgba(43,108,255,0.35);
-            cursor: pointer; transition: transform .1s ease, box-shadow .2s ease;
+            color: white;
+            border: 0;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 12px 30px rgba(43, 108, 255, 0.35);
+            cursor: pointer;
+            transition: transform .1s ease, box-shadow .2s ease;
         }
-        .cta:active { transform: translateY(1px); box-shadow: 0 8px 18px rgba(43,108,255,0.25); }
-        
+
+        .cta:active {
+            transform: translateY(1px);
+            box-shadow: 0 8px 18px rgba(43, 108, 255, 0.25);
+        }
+
         /* Mobile-specific styles */
         @media (max-width: 919px) {
             body {
                 overflow-y: auto;
                 padding: 20px 0;
             }
+
             .game-wrap {
                 width: min(90vw, 90vh);
                 height: min(90vw, 90vh);
             }
+
             .hud {
                 top: -60px;
             }
+
             .joystick-container {
                 display: block;
             }
         }
-        
+
         /* Desktop styles */
         @media (min-width: 920px) {
             .hud {
@@ -141,11 +179,12 @@
                 left: 10px;
                 right: 10px;
             }
+
             .joystick-container {
                 display: none;
             }
         }
-        
+
         /* Very small screens */
         @media (max-height: 600px) {
             .game-wrap {
@@ -158,6 +197,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <meta name="description" content="A modern, smooth Snake arcade game.">
 </head>
+
 <body>
     <div class="game-wrap">
         <div class="hud">
@@ -184,338 +224,342 @@
     </div>
 
     <script>
-    (function() {
-        const canvas = document.getElementById('board');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        const bestEl = document.getElementById('best');
-        const menu = document.getElementById('menu');
-        const gameOverEl = document.getElementById('gameOver');
-        const finalEl = document.getElementById('final');
+        (function () {
+            const canvas = document.getElementById('board');
+            const ctx = canvas.getContext('2d');
+            const scoreEl = document.getElementById('score');
+            const bestEl = document.getElementById('best');
+            const menu = document.getElementById('menu');
+            const gameOverEl = document.getElementById('gameOver');
+            const finalEl = document.getElementById('final');
 
-        // Grid settings
-        const gridSize = 24; // number of cells per row/col
-        const cell = canvas.width / gridSize; // cell pixels
-        const speedBaseMs = 110; // base tick speed
+            // Grid settings
+            const gridSize = 24; // number of cells per row/col
+            const cell = canvas.width / gridSize; // cell pixels
+            const speedBaseMs = 110; // base tick speed
 
-        // Colors
-        const colorSnake = '#6fffb0';
-        const colorSnakeHead = '#b5ffd6';
-        const colorFood = '#ffd166';
-        const colorFoodGlow = 'rgba(255, 209, 102, 0.45)';
+            // Colors
+            const colorSnake = '#6fffb0';
+            const colorSnakeHead = '#b5ffd6';
+            const colorFood = '#ffd166';
+            const colorFoodGlow = 'rgba(255, 209, 102, 0.45)';
 
-        // Game state
-        let snake = [];
-        let direction = { x: 1, y: 0 }; // initial moving right
-        let nextDirection = { x: 1, y: 0 };
-        let food = { x: 10, y: 10 };
-        let score = 0;
-        let best = Number(localStorage.getItem('snake_best') || 0);
-        let loopId = null;
-        let lastTickTs = 0;
-        let tickInterval = speedBaseMs;
-        let pendingGrowth = 0;
-        let isRunning = false;
+            // Game state
+            let snake = [];
+            let direction = { x: 1, y: 0 }; // initial moving right
+            let nextDirection = { x: 1, y: 0 };
+            let food = { x: 10, y: 10 };
+            let score = 0;
+            let best = Number(localStorage.getItem('snake_best') || 0);
+            let loopId = null;
+            let lastTickTs = 0;
+            let tickInterval = speedBaseMs;
+            let pendingGrowth = 0;
+            let isRunning = false;
 
-        bestEl.textContent = best;
+            bestEl.textContent = best;
 
-        function resetGame() {
-            snake = [
-                { x: 8, y: 12 },
-                { x: 7, y: 12 },
-                { x: 6, y: 12 }
-            ];
-            direction = { x: 1, y: 0 };
-            nextDirection = { x: 1, y: 0 };
-            placeFood();
-            score = 0;
-            scoreEl.textContent = score;
-            tickInterval = speedBaseMs;
-            pendingGrowth = 0;
-            isRunning = true;
-            lastTickTs = performance.now();
-        }
-
-        function start() {
-            menu.style.display = 'none';
-            gameOverEl.style.display = 'none';
-            resetGame();
-            loopId && cancelAnimationFrame(loopId);
-            loopId = requestAnimationFrame(loop);
-        }
-
-        function gameOver() {
-            isRunning = false;
-            finalEl.textContent = score;
-            if (score > best) {
-                best = score;
-                localStorage.setItem('snake_best', String(best));
-                bestEl.textContent = best;
-            }
-            gameOverEl.style.display = 'flex';
-        }
-
-        function placeFood() {
-            do {
-                food.x = Math.floor(Math.random() * gridSize);
-                food.y = Math.floor(Math.random() * gridSize);
-            } while (snake.some(s => s.x === food.x && s.y === food.y));
-        }
-
-        function update(dt) {
-            // Apply buffered direction
-            direction = nextDirection;
-
-            // Move snake: compute new head
-            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
-            // Wrap around for smooth arcade feel
-            if (head.x < 0) head.x = gridSize - 1;
-            if (head.x >= gridSize) head.x = 0;
-            if (head.y < 0) head.y = gridSize - 1;
-            if (head.y >= gridSize) head.y = 0;
-
-            // Check self-collision
-            if (snake.some((seg, i) => i > 0 && seg.x === head.x && seg.y === head.y)) {
-                return gameOver();
-            }
-
-            // Add head
-            snake.unshift(head);
-
-            // Eat food
-            if (head.x === food.x && head.y === food.y) {
-                score += 5;
-                scoreEl.textContent = score;
-                pendingGrowth += 2;
+            function resetGame() {
+                snake = [
+                    { x: 8, y: 12 },
+                    { x: 7, y: 12 },
+                    { x: 6, y: 12 }
+                ];
+                direction = { x: 1, y: 0 };
+                nextDirection = { x: 1, y: 0 };
                 placeFood();
-                // Slight speed up
-                tickInterval = Math.max(60, tickInterval - 2);
+                score = 0;
+                scoreEl.textContent = score;
+                tickInterval = speedBaseMs;
+                pendingGrowth = 0;
+                isRunning = true;
+                lastTickTs = performance.now();
             }
 
-            // Handle growth or tail removal
-            if (pendingGrowth > 0) {
-                pendingGrowth--;
-            } else {
-                snake.pop();
+            function start() {
+                menu.style.display = 'none';
+                gameOverEl.style.display = 'none';
+                resetGame();
+                loopId && cancelAnimationFrame(loopId);
+                loopId = requestAnimationFrame(loop);
             }
-        }
 
-        function drawCell(x, y, fill, radius = 6) {
-            const px = x * cell;
-            const py = y * cell;
-            const r = Math.min(radius, cell * 0.45);
-            ctx.beginPath();
-            ctx.moveTo(px + r, py);
-            ctx.arcTo(px + cell, py, px + cell, py + cell, r);
-            ctx.arcTo(px + cell, py + cell, px, py + cell, r);
-            ctx.arcTo(px, py + cell, px, py, r);
-            ctx.arcTo(px, py, px + cell, py, r);
-            ctx.closePath();
-            ctx.fillStyle = fill;
-            ctx.fill();
-        }
-
-        function render() {
-            // Clear
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Food glow
-            const cx = food.x * cell + cell / 2;
-            const cy = food.y * cell + cell / 2;
-            const grd = ctx.createRadialGradient(cx, cy, 2, cx, cy, cell * 0.9);
-            grd.addColorStop(0, colorFoodGlow);
-            grd.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grd;
-            ctx.beginPath();
-            ctx.arc(cx, cy, cell * 0.9, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Food
-            drawCell(food.x, food.y, colorFood, 8);
-
-            // Snake
-            for (let i = snake.length - 1; i >= 0; i--) {
-                const seg = snake[i];
-                const t = i === 0 ? 1 : Math.max(0.25, 1 - i / (snake.length + 4));
-                const col = i === 0 ? colorSnakeHead : lerpColor(colorSnake, '#1fe0a1', t * 0.25);
-                drawCell(seg.x, seg.y, col, i === 0 ? 10 : 8);
+            function gameOver() {
+                isRunning = false;
+                const gameover = new Audio('/sounds/game-over/game-over.wav');
+                gameover.play();
+                finalEl.textContent = score;
+                if (score > best) {
+                    best = score;
+                    localStorage.setItem('snake_best', String(best));
+                    bestEl.textContent = best;
+                }
+                gameOverEl.style.display = 'flex';
             }
-        }
 
-        function lerpColor(a, b, t) {
-            const ca = hexToRgb(a), cb = hexToRgb(b);
-            const r = Math.round(ca.r + (cb.r - ca.r) * t);
-            const g = Math.round(ca.g + (cb.g - ca.g) * t);
-            const bl = Math.round(ca.b + (cb.b - ca.b) * t);
-            return `rgb(${r}, ${g}, ${bl})`;
-        }
-
-        function hexToRgb(h) {
-            const s = h.startsWith('#') ? h.slice(1) : h;
-            const v = s.length === 3 ? s.split('').map(c => c + c).join('') : s;
-            const num = parseInt(v, 16);
-            return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
-        }
-
-        function loop(ts) {
-            if (!isRunning) return;
-            if (ts - lastTickTs >= tickInterval) {
-                lastTickTs = ts;
-                update(tickInterval);
+            function placeFood() {
+                do {
+                    food.x = Math.floor(Math.random() * gridSize);
+                    food.y = Math.floor(Math.random() * gridSize);
+                } while (snake.some(s => s.x === food.x && s.y === food.y));
             }
-            render();
-            loopId = requestAnimationFrame(loop);
-        }
 
-        // Input handling
-        function setDirection(nx, ny) {
-            // prevent reversing directly
-            if (nx === -direction.x && ny === -direction.y) return;
-            nextDirection = { x: nx, y: ny };
-        }
+            function update(dt) {
+                // Apply buffered direction
+                direction = nextDirection;
 
-        window.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'ArrowUp': case 'w': case 'W': 
-                    e.preventDefault();
-                    setDirection(0, -1); 
-                    break;
-                case 'ArrowDown': case 's': case 'S': 
-                    e.preventDefault();
-                    setDirection(0, 1); 
-                    break;
-                case 'ArrowLeft': case 'a': case 'A': 
-                    e.preventDefault();
-                    setDirection(-1, 0); 
-                    break;
-                case 'ArrowRight': case 'd': case 'D': 
-                    e.preventDefault();
-                    setDirection(1, 0); 
-                    break;
-                case ' ': 
-                    e.preventDefault();
-                    if (!isRunning) start(); 
-                    break;
-            }
-        });
+                // Move snake: compute new head
+                const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-        // Joystick functionality
-        const joystickBase = document.getElementById('joystickBase');
-        const joystickKnob = document.getElementById('joystickKnob');
-        
-        let isJoystickActive = false;
-        let joystickCenterX = 0;
-        let joystickCenterY = 0;
-        let joystickRadius = 35; // Maximum distance knob can move from center
-        
-        function initJoystick() {
-            const rect = joystickBase.getBoundingClientRect();
-            joystickCenterX = rect.left + rect.width / 2;
-            joystickCenterY = rect.top + rect.height / 2;
-        }
-        
-        function updateJoystickDirection(clientX, clientY) {
-            const deltaX = clientX - joystickCenterX;
-            const deltaY = clientY - joystickCenterY;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            
-            // Clamp to joystick radius
-            const clampedDistance = Math.min(distance, joystickRadius);
-            const angle = Math.atan2(deltaY, deltaX);
-            
-            const clampedX = Math.cos(angle) * clampedDistance;
-            const clampedY = Math.sin(angle) * clampedDistance;
-            
-            // Update knob position
-            joystickKnob.style.transform = `translate(${clampedX - 25}px, ${clampedY - 25}px)`;
-            
-            // Determine direction based on angle
-            const threshold = 0.3; // Minimum movement to register direction
-            if (clampedDistance > joystickRadius * threshold) {
-                if (Math.abs(clampedX) > Math.abs(clampedY)) {
-                    // Horizontal movement
-                    if (clampedX > 0) {
-                        setDirection(1, 0); // Right
-                    } else {
-                        setDirection(-1, 0); // Left
-                    }
+                // Wrap around for smooth arcade feel
+                if (head.x < 0) head.x = gridSize - 1;
+                if (head.x >= gridSize) head.x = 0;
+                if (head.y < 0) head.y = gridSize - 1;
+                if (head.y >= gridSize) head.y = 0;
+
+                // Check self-collision
+                if (snake.some((seg, i) => i > 0 && seg.x === head.x && seg.y === head.y)) {
+                    return gameOver();
+                }
+
+                // Add head
+                snake.unshift(head);
+
+                // Eat food
+                if (head.x === food.x && head.y === food.y) {
+                    const successmusic = new Audio('/sounds/success/success.wav');
+                    successmusic.play();
+                    score += 5;
+                    scoreEl.textContent = score;
+                    pendingGrowth += 2;
+                    placeFood();
+                    // Slight speed up
+                    tickInterval = Math.max(60, tickInterval - 2);
+                }
+
+                // Handle growth or tail removal
+                if (pendingGrowth > 0) {
+                    pendingGrowth--;
                 } else {
-                    // Vertical movement
-                    if (clampedY > 0) {
-                        setDirection(0, 1); // Down
+                    snake.pop();
+                }
+            }
+
+            function drawCell(x, y, fill, radius = 6) {
+                const px = x * cell;
+                const py = y * cell;
+                const r = Math.min(radius, cell * 0.45);
+                ctx.beginPath();
+                ctx.moveTo(px + r, py);
+                ctx.arcTo(px + cell, py, px + cell, py + cell, r);
+                ctx.arcTo(px + cell, py + cell, px, py + cell, r);
+                ctx.arcTo(px, py + cell, px, py, r);
+                ctx.arcTo(px, py, px + cell, py, r);
+                ctx.closePath();
+                ctx.fillStyle = fill;
+                ctx.fill();
+            }
+
+            function render() {
+                // Clear
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Food glow
+                const cx = food.x * cell + cell / 2;
+                const cy = food.y * cell + cell / 2;
+                const grd = ctx.createRadialGradient(cx, cy, 2, cx, cy, cell * 0.9);
+                grd.addColorStop(0, colorFoodGlow);
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grd;
+                ctx.beginPath();
+                ctx.arc(cx, cy, cell * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Food
+                drawCell(food.x, food.y, colorFood, 8);
+
+                // Snake
+                for (let i = snake.length - 1; i >= 0; i--) {
+                    const seg = snake[i];
+                    const t = i === 0 ? 1 : Math.max(0.25, 1 - i / (snake.length + 4));
+                    const col = i === 0 ? colorSnakeHead : lerpColor(colorSnake, '#1fe0a1', t * 0.25);
+                    drawCell(seg.x, seg.y, col, i === 0 ? 10 : 8);
+                }
+            }
+
+            function lerpColor(a, b, t) {
+                const ca = hexToRgb(a), cb = hexToRgb(b);
+                const r = Math.round(ca.r + (cb.r - ca.r) * t);
+                const g = Math.round(ca.g + (cb.g - ca.g) * t);
+                const bl = Math.round(ca.b + (cb.b - ca.b) * t);
+                return `rgb(${r}, ${g}, ${bl})`;
+            }
+
+            function hexToRgb(h) {
+                const s = h.startsWith('#') ? h.slice(1) : h;
+                const v = s.length === 3 ? s.split('').map(c => c + c).join('') : s;
+                const num = parseInt(v, 16);
+                return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+            }
+
+            function loop(ts) {
+                if (!isRunning) return;
+                if (ts - lastTickTs >= tickInterval) {
+                    lastTickTs = ts;
+                    update(tickInterval);
+                }
+                render();
+                loopId = requestAnimationFrame(loop);
+            }
+
+            // Input handling
+            function setDirection(nx, ny) {
+                // prevent reversing directly
+                if (nx === -direction.x && ny === -direction.y) return;
+                nextDirection = { x: nx, y: ny };
+            }
+
+            window.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        e.preventDefault();
+                        setDirection(0, -1);
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        e.preventDefault();
+                        setDirection(0, 1);
+                        break;
+                    case 'ArrowLeft': case 'a': case 'A':
+                        e.preventDefault();
+                        setDirection(-1, 0);
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        e.preventDefault();
+                        setDirection(1, 0);
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        if (!isRunning) start();
+                        break;
+                }
+            });
+
+            // Joystick functionality
+            const joystickBase = document.getElementById('joystickBase');
+            const joystickKnob = document.getElementById('joystickKnob');
+
+            let isJoystickActive = false;
+            let joystickCenterX = 0;
+            let joystickCenterY = 0;
+            let joystickRadius = 35; // Maximum distance knob can move from center
+
+            function initJoystick() {
+                const rect = joystickBase.getBoundingClientRect();
+                joystickCenterX = rect.left + rect.width / 2;
+                joystickCenterY = rect.top + rect.height / 2;
+            }
+
+            function updateJoystickDirection(clientX, clientY) {
+                const deltaX = clientX - joystickCenterX;
+                const deltaY = clientY - joystickCenterY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                // Clamp to joystick radius
+                const clampedDistance = Math.min(distance, joystickRadius);
+                const angle = Math.atan2(deltaY, deltaX);
+
+                const clampedX = Math.cos(angle) * clampedDistance;
+                const clampedY = Math.sin(angle) * clampedDistance;
+
+                // Update knob position
+                joystickKnob.style.transform = `translate(${clampedX - 25}px, ${clampedY - 25}px)`;
+
+                // Determine direction based on angle
+                const threshold = 0.3; // Minimum movement to register direction
+                if (clampedDistance > joystickRadius * threshold) {
+                    if (Math.abs(clampedX) > Math.abs(clampedY)) {
+                        // Horizontal movement
+                        if (clampedX > 0) {
+                            setDirection(1, 0); // Right
+                        } else {
+                            setDirection(-1, 0); // Left
+                        }
                     } else {
-                        setDirection(0, -1); // Up
+                        // Vertical movement
+                        if (clampedY > 0) {
+                            setDirection(0, 1); // Down
+                        } else {
+                            setDirection(0, -1); // Up
+                        }
                     }
                 }
             }
-        }
-        
-        function resetJoystick() {
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            isJoystickActive = false;
-        }
-        
-        // Mouse events
-        joystickBase.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            isJoystickActive = true;
-            initJoystick();
-            updateJoystickDirection(e.clientX, e.clientY);
-        });
-        
-        document.addEventListener('mousemove', (e) => {
-            if (isJoystickActive) {
-                updateJoystickDirection(e.clientX, e.clientY);
+
+            function resetJoystick() {
+                joystickKnob.style.transform = 'translate(-50%, -50%)';
+                isJoystickActive = false;
             }
-        });
-        
-        document.addEventListener('mouseup', () => {
-            if (isJoystickActive) {
-                resetJoystick();
-            }
-        });
-        
-        // Touch events
-        joystickBase.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            isJoystickActive = true;
-            initJoystick();
-            const touch = e.touches[0];
-            updateJoystickDirection(touch.clientX, touch.clientY);
-        });
-        
-        document.addEventListener('touchmove', (e) => {
-            if (isJoystickActive) {
+
+            // Mouse events
+            joystickBase.addEventListener('mousedown', (e) => {
                 e.preventDefault();
+                isJoystickActive = true;
+                initJoystick();
+                updateJoystickDirection(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isJoystickActive) {
+                    updateJoystickDirection(e.clientX, e.clientY);
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isJoystickActive) {
+                    resetJoystick();
+                }
+            });
+
+            // Touch events
+            joystickBase.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isJoystickActive = true;
+                initJoystick();
                 const touch = e.touches[0];
                 updateJoystickDirection(touch.clientX, touch.clientY);
-            }
-        }, { passive: false });
-        
-        document.addEventListener('touchend', () => {
-            if (isJoystickActive) {
-                resetJoystick();
-            }
-        });
+            });
 
-        document.getElementById('startBtn').addEventListener('click', start);
-        document.getElementById('restartBtn').addEventListener('click', start);
+            document.addEventListener('touchmove', (e) => {
+                if (isJoystickActive) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    updateJoystickDirection(touch.clientX, touch.clientY);
+                }
+            }, { passive: false });
 
-        // Auto-resume with Enter on desktop
-        window.addEventListener('keydown', (e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && menu.style.display !== 'none') {
-                e.preventDefault();
-                start();
-            }
-        });
+            document.addEventListener('touchend', () => {
+                if (isJoystickActive) {
+                    resetJoystick();
+                }
+            });
 
-        // Start paused at menu
-        isRunning = false;
-        render();
-    })();
+            document.getElementById('startBtn').addEventListener('click', start);
+            document.getElementById('restartBtn').addEventListener('click', start);
+
+            // Auto-resume with Enter on desktop
+            window.addEventListener('keydown', (e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && menu.style.display !== 'none') {
+                    e.preventDefault();
+                    start();
+                }
+            });
+
+            // Start paused at menu
+            isRunning = false;
+            render();
+        })();
     </script>
-    
-</body>
-</html>
 
+</body>
+
+</html>

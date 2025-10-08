@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memory Match Game</title>
     <style>
-        body { 
-            text-align: center; 
-            font-family: 'Poppins', sans-serif; 
-            margin: 0; 
+        body {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
@@ -18,6 +19,7 @@
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: #fff;
         }
+
         .game-board {
             display: grid;
             grid-gap: 15px;
@@ -27,6 +29,7 @@
             width: 90vw;
             max-width: 600px;
         }
+
         .card {
             background: #ffffff33;
             display: flex;
@@ -39,26 +42,32 @@
             aspect-ratio: 1 / 1;
             transition: 0.3s;
         }
+
         .card:hover {
             background: #ffffff55;
         }
-        .flipped { 
-            background: #ffffff; 
+
+        .flipped {
+            background: #ffffff;
             color: #333;
         }
-        .controls { 
-            margin: 15px; 
+
+        .controls {
+            margin: 15px;
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
         }
+
         label {
             font-size: 18px;
             font-weight: bold;
         }
-        select, button {
+
+        select,
+        button {
             padding: 12px;
             font-size: 16px;
             border-radius: 5px;
@@ -66,17 +75,21 @@
             cursor: pointer;
             transition: 0.3s;
         }
+
         select {
             background: #ffffff;
             color: #333;
         }
+
         button {
             background: #ff9800;
             color: white;
         }
+
         button:hover {
             background: #e68900;
         }
+
         #winScreen {
             display: none;
             position: fixed;
@@ -90,28 +103,31 @@
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
         }
+
         #restartBtn {
-            margin-top: 15px; 
-            cursor: pointer; 
-            padding: 12px; 
-            background: #ff9800; 
-            border: none; 
+            margin-top: 15px;
+            cursor: pointer;
+            padding: 12px;
+            background: #ff9800;
+            border: none;
             border-radius: 5px;
             color: white;
             font-size: 16px;
         }
-        #back-button{
-            margin-top: 15px; 
-            cursor: pointer; 
-            padding: 12px; 
-            background: #ff9800; 
-            border: none; 
+
+        #back-button {
+            margin-top: 15px;
+            cursor: pointer;
+            padding: 12px;
+            background: #ff9800;
+            border: none;
             border-radius: 5px;
             color: white;
             font-size: 16px;
         }
     </style>
 </head>
+
 <body>
     <h1>Memory Match Game</h1>
     <div class="controls">
@@ -141,8 +157,10 @@
         const gameBoard = document.getElementById("gameBoard");
         const gridSizeSelect = document.getElementById("gridSize");
         const winScreen = document.getElementById("winScreen");
+        const applause = new Audio('/sounds/applauses/long-applause.wav');
 
         function startGame() {
+            applause.pause();
             gameBoard.innerHTML = "";
             winScreen.style.display = "none";
             selectedCards = [];
@@ -152,7 +170,7 @@
             if (cols % 2 !== 0) cols += 1;
             let rows = Math.ceil(gridSize / cols);
             gameBoard.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-            
+
             const uniqueSymbols = ['🍎', '🍌', '🍇', '🍉', '🥕', '🌽', '🍓', '🍊', '🍒', '🍍', '🥑', '🥭', '🍈', '🥥', '🍋', '🍏', '🍐', '🥝'];
             symbols = uniqueSymbols.slice(0, gridSize / 2);
             symbols = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
@@ -179,12 +197,17 @@
 
         function checkMatch() {
             if (selectedCards[0].dataset.symbol === selectedCards[1].dataset.symbol) {
+                const successmusic = new Audio('/sounds/success/success.wav');
+                successmusic.play();
                 matchedPairs++;
                 selectedCards = [];
                 if (matchedPairs === symbols.length / 2) {
+                    applause.play();
                     setTimeout(() => winScreen.style.display = "block", 300);
                 }
             } else {
+                const errormusic = new Audio('/sounds/errors/error.wav');
+                errormusic.play();
                 selectedCards.forEach(card => {
                     card.textContent = "";
                     card.classList.remove("flipped");
@@ -196,4 +219,5 @@
         startGame();
     </script>
 </body>
+
 </html>
