@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Car-Dodger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, #222, #444);
+    font-family: 'Poppins', sans-serif;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background: #666;
+  }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    pointer-events: none;
+  }
+  #title {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ffcc00;
+    text-shadow: 0 0 15px #ff6600, 0 0 25px #ff0000;
+    margin-bottom: 20px;
+  }
+  #startText {
+    font-size: 1.2em;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="overlay">
+  <div id="title">🚗 Car-Dodger 🚗</div>
+  <div id="startText">Press <b>Space</b> or <b>Tap</b> to Start</div>
+</div>
+
+<script>
+
+  
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+function resizeCanvas() {
+  canvas.width = Math.min(window.innerWidth, 400);
+  canvas.height = Math.min(window.innerHeight, 600);
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let roadWidth, laneWidth, frame = 0;
+const laneCount = 3;
+let player = {x: 0, y: 0, width: 35, height: 70, speed: 3};
+let obstacles = [];
+let gameStarted = false, gameOver = false, score = 0;
+
+const carColors = ['#FF3B30','#FF9500','#34C759','#007AFF','#AF52DE','#FF2D55','#FFD60A','#00C7BE'];
+
+// Initialize
+function initGame() {
+  roadWidth = canvas.width * 0.6;
+  laneWidth = roadWidth / laneCount;
+  player.x = canvas.width/2 - player.width/2;
+  player.y = canvas.height - player.height - 10;
+  player.speed = 3;
+  obstacles = [];
+  score = 0;
+  gameOver = false;
+  frame = 0;
+  overlay.style.display = 'none';
+}
+
+let keys = {};
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if ((e.key === ' ' || e.key === 'Enter') && (!gameStarted || gameOver)) {
+    e.preventDefault();
+    initGame();
+    gameStarted = true;
+    loop();
+  }
+});
+document.addEventListener('keyup', e => keys[e.key] = false);
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const x = e.touches[0].clientX - canvas.offsetLeft;
+  if (!gameStarted || gameOver) {
+    initGame();
+    gameStarted = true;
+    loop();
+  } else {
+    if (x < canvas.width / 2) keys['ArrowLeft'] = true;
+    else keys['ArrowRight'] = true;
+  }
+});
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  keys['ArrowLeft'] = keys['ArrowRight'] = false;
+});
+
+function drawCar(x, y, width, height, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = '#222';
+  ctx.fillRect(x + width * 0.2, y + height * 0.1, width * 0.6, height * 0.3);
+  ctx.fillStyle = '#88c';
+  ctx.fillRect(x + width * 0.25, y + height * 0.15, width * 0.5, height * 0.2);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(x + 2, y + 5, 6, 12);
+  ctx.fillRect(x + width - 8, y + 5, 6, 12);
+  ctx.fillRect(x + 2, y + height - 17, 6, 12);
+  ctx.fillRect(x + width - 8, y + height - 17, 6, 12);
+}
+
+function update() {
+  frame++;
+  const roadLeft = (canvas.width - roadWidth)/2;
+  const roadRight = roadLeft + roadWidth - player.width;
+
+  if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+  if (player.x < roadLeft) player.x = roadLeft;
+  if (player.x > roadRight) player.x = roadRight;
+
+  if (frame % 60 === 0) {
+    const lane = Math.floor(Math.random() * laneCount);
+    const obsX = roadLeft + lane * laneWidth + (laneWidth - player.width) / 2;
+    obstacles.push({
+      x: obsX,
+      y: -80,
+      width: player.width,
+      height: player.height,
+      speed: player.speed,
+      color: carColors[Math.floor(Math.random() * carColors.length)]
+    });
+  }
+
+  if (frame % 120 === 0) player.speed += 0.4;
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const o = obstacles[i];
+    o.y += o.speed;
+    if (
+      o.x < player.x + player.width &&
+      o.x + o.width > player.x &&
+      o.y < player.y + player.height &&
+      o.y + o.height > player.y
+    ) gameOver = true;
+
+    if (o.y > canvas.height) {
+      obstacles.splice(i, 1);
+      score++;
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const roadLeft = (canvas.width - roadWidth)/2;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(roadLeft, 0, roadWidth, canvas.height);
+
+  ctx.strokeStyle = '#FFF';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([20, 15]);
+  for (let i = 1; i < laneCount; i++) {
+    const x = roadLeft + i * laneWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  drawCar(player.x, player.y, player.width, player.height, '#00A8FF');
+
+  for (const o of obstacles) drawCar(o.x, o.y, o.width, o.height, o.color);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px Poppins, sans-serif';
+  ctx.fillText('Score: ' + score, 10, 20);
+}
+
+function loop() {
+  if (!gameStarted) return;
+  if (!gameOver) {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  } else {
+    overlay.style.display = 'flex';
+    document.getElementById('title').textContent = '🚗 Car-Dodger 🚗';
+    document.getElementById('startText').innerHTML = 'Game Over!<br>Score: ' + score + '<br>Press Space or Tap to Restart';
+  }
+}
+</script>
+</body>
+</html>
