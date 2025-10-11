@@ -13,7 +13,6 @@
         font-family: Arial, Helvetica, sans-serif;
         text-align: center;
         background-color: rgb(239, 160, 199);
-
         color: #333;
       }
 
@@ -63,7 +62,7 @@
       }
       #win-screen {
         display: none;
-      } /* NEW: Win screen is hidden by default */
+      }
 
       #errors {
         color: #d9534f;
@@ -72,16 +71,16 @@
       }
 
       #board {
-        width: 450px;
-        height: 450px;
+        width: 90vw;
+        max-width: 450px;
         margin: 15px auto;
-        display: flex;
-        flex-wrap: wrap;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        aspect-ratio: 1 / 1;
       }
+
       .tile {
-        width: 48px;
-        height: 48px;
         border: 1px solid #b0b0b0;
         font-size: 20px;
         font-weight: bold;
@@ -91,18 +90,22 @@
         background-color: #fff;
         cursor: pointer;
       }
+
       #digits {
-        width: 450px;
-        height: 50px;
+        width: 90vw;
+        max-width: 450px;
         margin: 15px auto;
         display: flex;
-        flex-wrap: wrap;
+        /* Use gap for spacing instead of margin */
+        gap: 5px;
       }
+
       .number {
-        width: 44px;
-        height: 44px;
+        /* Allow tiles to grow and shrink */
+        flex: 1;
+        aspect-ratio: 1 / 1; /* Keep them square */
+
         border: 1px solid black;
-        margin: 2px;
         font-size: 20px;
         font-weight: bold;
         display: flex;
@@ -110,7 +113,10 @@
         align-items: center;
         cursor: pointer;
         border-radius: 5px;
+
+        /* REMOVED fixed width, height, and margin */
       }
+
       .number-selected {
         background-color: #428bca;
         color: white;
@@ -125,7 +131,6 @@
         border-right: 2px solid black;
       }
 
-      /* NEW: Style for the back to instructions button */
       .back-btn {
         background-color: #f0ad4e;
         margin-top: 0;
@@ -161,7 +166,9 @@
       <h2>Congratulations! 🥳</h2>
       <p>You have successfully solved the puzzle.</p>
       <button id="play-again-btn" class="screen-btn">Play Again</button>
-      <a href="./index.html"><button id="back" class="screen-btn"> Back To Home Page</button></a>
+      <a href="./index.html"
+        ><button id="back" class="screen-btn">Back To Home Page</button></a
+      >
     </div>
 
     <script>
