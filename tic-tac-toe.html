@@ -64,6 +64,39 @@
             /* Set the text color for O */
         }
 
+       
+        .color-picker-container {
+            margin: 1.5rem 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 2rem;
+          font-family: sans-serif;
+        }
+
+        .color-picker-container label {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #191923;
+        }
+
+        .color-picker-container input[type="color"] {
+          width: 3rem;
+          height: 3rem;
+          border: none;
+          outline: none;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .color-picker-container input[type="color"]:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        
 
         #reset-btn {
             padding: 1rem;
@@ -120,6 +153,19 @@
     </div>
     <main>
         <h1>Tic Tac Toe</h1>
+
+        <div class="color-picker-container">
+          <div>
+            <label for="xColor">X Color:</label>
+            <input type="color" id="xColor" value="#11701f">
+          </div>
+          <div>
+            <label for="oColor">O Color:</label>
+            <input type="color" id="oColor" value="#ff0000">
+          </div>
+        </div>
+
+        
         <div class="container">
             <div class="game">
                 <button class="box" aria-label="Tic Tac Toe cell"></button>
@@ -148,6 +194,22 @@
 
         let turnO = true; // player O
 
+        let xColorPicker = document.getElementById("xColor");
+        let oColorPicker = document.getElementById("oColor");
+
+        let xColor = xColorPicker.value;
+        let oColor = oColorPicker.value;
+
+        xColorPicker.addEventListener("input", () => {
+            xColor = xColorPicker.value;
+        });
+
+        oColorPicker.addEventListener("input", () => {
+          oColor = oColorPicker.value;
+        });
+
+
+        
         const winPatterns = [
             [0, 1, 2],
             [0, 3, 6],
@@ -172,15 +234,14 @@
             box.addEventListener("click", () => {
                 if (turnO) {
                     box.innerText = "O";
-                    box.classList.add("o-turn");
-                    box.classList.remove("x-turn");
+                    box.style.color = oColor;
                     turnO = false;
                 } else {
                     box.innerText = "X";
-                    box.classList.add("x-turn");
-                    box.classList.remove("o-turn");
+                    box.style.color = xColor;
                     turnO = true;
                 }
+
                 cnt += 1;
                 box.disabled = true;
                 checkWinner();
@@ -201,7 +262,7 @@
             for (let box of boxes) {
                 box.disabled = false;
                 box.innerText = "";
-                box.classList.remove("o-turn", "x-turn");
+                box.style.color = "";
             }
         }
 
