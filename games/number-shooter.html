@@ -170,7 +170,7 @@
                     clearInterval(timerinterval);
                     document.querySelector("#pbtm").innerHTML = `<h1 class="game-over">Game Over! Final Score: ${score}</h1>
                     <div class="control-div"><button onClick="window.location.reload();">Restart Game</button><br><button onclick="window.location.href='https://a2.games/'">Back to Home</button></div>`;
-                    const gameover = new Audio('/sounds/game-over/game-over.wav');
+                    const gameover = new Audio('../sounds/game-over/game-over.wav');
                     gameover.play();
                 }
             }, 1000);
@@ -182,14 +182,14 @@
         }
 
         function increaseScore() {
-            const successmusic = new Audio('/sounds/success/success.wav');
+            const successmusic = new Audio('../sounds/success/success.wav');
             successmusic.play();
             score += 10;
             document.querySelector("#scoreval").textContent = score;
         }
 
         function wrongHit(clickedbubble) {
-            const errormusic = new Audio('/sounds/errors/error.wav');
+            const errormusic = new Audio('../sounds/errors/error.wav');
             errormusic.play();
             clickedbubble.style.backgroundColor = "red";
             setTimeout(() => {

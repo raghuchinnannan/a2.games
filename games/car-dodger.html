@@ -62,14 +62,14 @@
     const ctx = canvas.getContext('2d');
     const overlay = document.getElementById('overlay');
 
-    const gameOverSound = new Audio('/sounds/game-over/game-over.wav');
+    const gameOverSound = new Audio('../sounds/game-over/game-over.wav');
     gameOverSound.preload = 'auto';
 
-    const engineSound = new Audio('/sounds/vehicles/engine-sound.mp3');
+    const engineSound = new Audio('../sounds/vehicles/engine-sound.mp3');
     engineSound.preload = 'auto';
     engineSound.loop = true;
 
-    const crashSound = new Audio('/sounds/effects/crash.mp3.flac');
+    const crashSound = new Audio('../sounds/effects/crash.mp3.flac');
     crashSound.preload = 'auto';
 
     function resizeCanvas() {

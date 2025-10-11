@@ -55,7 +55,7 @@ class GameFilter {
             this.updateGameCount();
             
             this.isInitialized = true;
-            console.log(`Game filter initialized with ${this.gameCards.length} games`);
+            // console.log(`Game filter initialized with ${this.gameCards.length} games`);
             
         } catch (error) {
             console.error('Error initializing game filter:', error);
@@ -67,6 +67,14 @@ class GameFilter {
         this.gameCards.forEach((card, index) => {
             const tags = (card.dataset.tags || '').toLowerCase().split(',').map(tag => tag.trim());
             const name = (card.dataset.name || '').toLowerCase();
+            // Auto-detect platform support from the visual platforms element (if present)
+            // This ensures filters for 'mobile' and 'desktop' work even if HTML wasn't updated.
+            const platformsEl = card.querySelector('.platforms');
+            if (platformsEl) {
+                const platformsText = platformsEl.textContent || '';
+                if (/📱/.test(platformsText) && !tags.includes('mobile')) tags.push('mobile');
+                if (/🖥️|💻/.test(platformsText) && !tags.includes('desktop')) tags.push('desktop');
+            }
             
             // Store processed data on the element for quick access
             card._filterData = {
@@ -188,14 +196,16 @@ class GameFilter {
         });
 
         // Log filter results for debugging
-        console.log(`Filtered: ${this.filteredGames.length}/${this.gameCards.length} games`);
+        // console.log(`Filtered: ${this.filteredGames.length}/${this.gameCards.length} games`);
     }
 
     updateGameCount() {
         const visibleCount = this.filteredGames.length;
         
-        // Update the hero stats if they exist
-        const statNumbers = document.querySelectorAll('.stat-number');
+        // Update the hero stats only when explicitly opted-in.
+        // To enable dynamic updates for a stat, add the attribute
+        // `data-auto-count` to the corresponding `.stat-number` element in HTML.
+        const statNumbers = document.querySelectorAll('.stat-number[data-auto-count]');
         statNumbers.forEach(stat => {
             const text = stat.textContent;
             if (text.includes('+') && parseInt(text) > 0) {

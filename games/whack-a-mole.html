@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>Whack-a-Mole</title>
-    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link rel="icon" type="image/x-icon" href="../images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -79,7 +79,7 @@
             <div class="title">Game Over</div>
             <div class="subtle">Score: <span id="final">0</span></div>
             <button class="cta" id="restartBtn">Restart</button>
-            <a href="./index.html"><button class="cta">Back To Home Page</button></a>
+            <a href="../index.html"><button class="cta">Back To Home Page</button></a>
         </div>
         <div class="controls" aria-hidden="true">
             <button class="btn" id="btnLeft">◀</button>
@@ -214,7 +214,7 @@
 
             if (c.type === 'bomb') {
                 // Bomb feedback: explosion + flash + shake - lose life
-                const audio = new Audio('/sounds/bombs/bomb_explosion_8bit.wav');
+                const audio = new Audio('../sounds/bombs/bomb_explosion_8bit.wav');
                 audio.play();
                 addFX(c.cell, 'explode', centerX, centerY);
                 addFlash();
