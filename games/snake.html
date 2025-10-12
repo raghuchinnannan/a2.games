@@ -329,6 +329,7 @@
                 // Eat food
                 if (head.x === food.x && head.y === food.y) {
                     const successMusic = new Audio('/sounds/success/success.wav');
+                    successMusic.preload = 'auto';
                     successMusic.play();
                     score += 5;
                     scoreEl.textContent = score;
