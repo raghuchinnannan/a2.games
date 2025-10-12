@@ -162,7 +162,7 @@
       <h2>Congratulations! 🥳</h2>
       <p>You have successfully solved the puzzle.</p>
       <button id="play-again-btn" class="screen-btn">Play Again</button>
-      <a href="../index.html"
+      <a href="/index.html"
         ><button id="back" class="screen-btn">Back To Home Page</button></a
       >
     </div>
@@ -391,6 +391,9 @@
       // NEW: Function to handle the win state
       function handleWin() {
         document.getElementById("game-container").style.display = "none";
+        const applause = new Audio('/sounds/applauses/long-applause.wav');
+        applause.preload = 'auto';
+        applause.play();
         document.getElementById("win-screen").style.display = "block";
       }
     </script>
