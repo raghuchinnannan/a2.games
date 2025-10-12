@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"></noscript>
-    <link rel="icon" type="image/x-icon" href="../images/logo.png">
+    <link rel="icon" type="image/x-icon" href="/images/logo.png">
     <style>
         body {
             font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -221,7 +221,7 @@
 </head>
 <body>
     <header>
-        <img src="./images/logo.png" width="96" height="96" alt="A2 games logo"><br>
+        <img src="/images/logo.png" width="96" height="96" alt="A2 games logo"><br>
         a2.games
     </header>
     <div class="container">
@@ -310,7 +310,7 @@
         }
         
         // Preload snap sound effect
-        const snapSound = new Audio('../sounds/effects/snap.mp3');
+        const snapSound = new Audio('/sounds/effects/snap.mp3');
         snapSound.preload = 'auto';
 
         window.addEventListener("keydown", function(e) {
