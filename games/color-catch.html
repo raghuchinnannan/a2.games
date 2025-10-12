@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>Color Catch</title>
-    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link rel="icon" type="image/x-icon" href="../images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -194,7 +194,7 @@
             <div class="title">Game Over</div>
             <div class="subtle">Final Score: <span id="final">0</span></div>
             <button id="restartBtn" class="cta">Restart</button>
-            <a href="./index.html"><button id="back" class="cta"> Back To Home Page</button> </a>
+            <a href="../index.html"><button id="back" class="cta"> Back To Home Page</button> </a>
         </div>
         <div class="controls" aria-hidden="true">
             <button class="btn" id="btnLeft">◀</button>
@@ -451,7 +451,7 @@
             const gameWrap = document.querySelector('.game-wrap');
             gameWrap.appendChild(explosion);
 
-            const audio = new Audio('/sounds/bombs/bomb_explosion_8bit.wav');
+            const audio = new Audio('../sounds/bombs/bomb_explosion_8bit.wav');
             audio.play();
             
             // Remove after animation completes

@@ -143,7 +143,7 @@
     </div>
     <div class="game-board" id="gameBoard"></div>
     <div id="back-button">
-        <a href="./index.html"><button>Back To Home Page</button></a>
+        <a href="/index.html"><button>Back To Home Page</button></a>
     </div>
     <div id="winScreen">
         <h2>You Win!</h2>
@@ -157,7 +157,14 @@
         const gameBoard = document.getElementById("gameBoard");
         const gridSizeSelect = document.getElementById("gridSize");
         const winScreen = document.getElementById("winScreen");
+        
         const applause = new Audio('/sounds/applauses/long-applause.wav');
+        applause.preload = 'auto';
+        const successMusic = new Audio('/sounds/success/success.wav');
+        successMusic.preload = 'auto';
+        const errorMusic = new Audio('/sounds/errors/error.wav');
+        errorMusic.preload = 'auto';
+        
 
         function startGame() {
             applause.pause();
@@ -197,8 +204,7 @@
 
         function checkMatch() {
             if (selectedCards[0].dataset.symbol === selectedCards[1].dataset.symbol) {
-                const successmusic = new Audio('/sounds/success/success.wav');
-                successmusic.play();
+                successMusic.play();
                 matchedPairs++;
                 selectedCards = [];
                 if (matchedPairs === symbols.length / 2) {
@@ -206,8 +212,7 @@
                     setTimeout(() => winScreen.style.display = "block", 300);
                 }
             } else {
-                const errormusic = new Audio('/sounds/errors/error.wav');
-                errormusic.play();
+                errorMusic.play();
                 selectedCards.forEach(card => {
                     card.textContent = "";
                     card.classList.remove("flipped");

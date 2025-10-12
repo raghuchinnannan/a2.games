@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>Orbit Switch</title>
-    <link rel="icon" type="image/x-icon" href="./images/logo.png">
+    <link rel="icon" type="image/x-icon" href="/images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -154,6 +154,7 @@
 
         function end() {
             const gameover = new Audio('/sounds/game-over/game-over.wav');
+            gameover.preload = 'auto';
             gameover.play();
             running = false;
             cancelAnimationFrame(rafId);
@@ -244,14 +245,16 @@
                     const hitboxSize = h.type === 'ring' ? 0.23 : 0.18; // smaller hitbox for red hazards
                     if (d < hitboxSize) {
                         if (h.type === 'ring') {
-                            const collisionmusic = new Audio('/sounds/success/success.wav');
-                            collisionmusic.play();
+                            const collisionMusic = new Audio('/sounds/success/success.wav');
+                            collisionMusic.preload = 'auto';
+                            collisionMusic.play();
                             score += 1; scoreEl.textContent = score;
                             hazards.splice(i, 1);
                         } else {
                             if (ms < invulnUntil) { continue; }
-                            const collisionmusic = new Audio('/sounds/errors/error.wav');
-                            collisionmusic.play();
+                            const collisionMusic = new Audio('/sounds/errors/error.wav');
+                            collisionMusic.play();
+                            collisionMusic.preload = 'auto';
                             lives -= 1; livesEl.textContent = lives;
                             invulnUntil = ms + 1200; // 1.2s invulnerability window
                             hazards.splice(i, 1);

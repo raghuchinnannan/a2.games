@@ -5,304 +5,631 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>a2.games - Free Browser games</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="./images/logo.png">
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
-            text-align: center;
-        }
-
-        header {
-            position: fixed;
-            width: 100vw;
-            background: rgba(0, 0, 0);
-            padding: 20px;
-            font-size: 28px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: lowercase;
-            box-shadow: 0 4px 10px rgba(0, 0, 0);
-            z-index: 100;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: auto;
-            padding: 50px 20px;
-        }
-
-        .hero {
-            padding: 50px 20px;
-            margin-top: 150px;
-        }
-
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .hero p {
-            font-size: 18px;
-            max-width: 700px;
-            margin: auto;
-        }
-
-        .games {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 40px;
-        }
-        .welcome {
-            color: aquamarine; 
-            font-style: italic;
-        }
-
-        .welcome a {
-            text-decoration:none;
-            color: black;
-            font-weight: 900;
-        }
-
-        .game-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            width: 250px;
-            text-align: center;
-            transition: 0.3s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .game-card:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-5px);
-        }
-
-        .game-card img {
-            width: 100%;
-            border-radius: 10px;
-        }
-
-        .game-card h3 {
-            margin-top: 10px;
-        }
-
-        .platforms {
-            font-size: 16px;
-            margin-top: 5px;
-            opacity: 0.8;
-        }
-
-        .play-now {
-            color: #ff9800;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .footer {
-            margin-top: 50px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.9);
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 36px;
-            }
-
-            .game-card {
-                width: 90%;
-            }
-
-            #spaceShooterCard {
-                display: none !important;
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/images/logo.png">
+    <script src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.11/dist/lenis.css">
+    <script src="/js/filter.js"></script>
+    <link rel="stylesheet" href="./css/main.css">
 </head>
 
 <body>
-    <header><img src="./images/logo.png" width="96" height="96" alt="A2 games logo"><br>a2.games</header>
+    <header>
+        <div class="header-content">
+            <a href="#" class="logo-container">
+                <img src="/images/logo.png" class="logo-img" alt="A2 games logo">
+                <div class="logo-text">a2.games</div>
+            </a>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active">Home</a>
+                <a href="#games" class="nav-link">Games</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+
+            <div class="nav-cta">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon theme-icon-dark">🌙</span>
+                    <span class="theme-icon theme-icon-light">☀️</span>
+                </button>
+                <a href="https://github.com/raghuchinnannan/a2.games" target="_blank" class="nav-btn">
+                    <span>⭐</span> Star on GitHub
+                </a>
+            </div>
+
+            <div class="mobile-menu-toggle" id="mobileMenuToggle">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+        </div>
+
+        <!-- Mobile nav overlay -->
+        <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+
+        <div class="mobile-nav" id="mobileNav">
+            <nav class="mobile-nav-menu">
+                <a href="#" class="mobile-nav-link active">Home</a>
+                <a href="#games" class="mobile-nav-link">Games</a>
+                <a href="#about" class="mobile-nav-link">About</a>
+                <a href="#contact" class="mobile-nav-link">Contact</a>
+            </nav>
+            <div class="mobile-nav-cta">
+                <button class="theme-toggle mobile-theme-toggle" id="mobileThemeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon theme-icon-dark">🌙</span>
+                    <span class="theme-icon theme-icon-light">☀️</span>
+                    <span class="theme-label">Switch Theme</span>
+                </button>
+                <a href="https://github.com/raghuchinnannan/a2.games" target="_blank" class="nav-btn">
+                    <span>⭐</span> Star on GitHub
+                </a>
+            </div>
+        </div>
+    </header>
     <div class="container">
         <div class="hero">
-            <h1> Welcome to a2.games</h1>
-            <p class="welcome">Play fun and engaging games right from your browser. No installs, no hassle, just pure entertainment.</p>
-            <p class="welcome">Want to add a game you developed? Create a PR in <a href="https://github.com/raghuchinnannan/a2.games" target="_blank">Github</a></p>
+            <div class="hero-content">
+                <div class="hero-badge">
+                    🎮 Free Browser Games
+                </div>
+                <h1>Play Amazing Games<br>Right From Your Browser</h1>
+                <p class="hero-subtitle">
+                    Discover a collection of fun, engaging games that you can play instantly.
+                    No downloads, no installations—just pure entertainment at your fingertips.
+                </p>
+                <div class="hero-cta">
+                    <div class="cta-buttons">
+                        <a href="#games" class="btn-primary">
+                            🎯 Start Playing
+                        </a>
+                        <a href="https://github.com/raghuchinnannan/a2.games" target="_blank" class="btn-secondary">
+                            💻 Contribute on GitHub
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">20+</span>
+                        <span class="stat-label">Games Available</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Free to Play</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">ZERO</span>
+                        <span class="stat-label">Downloads Required</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">∞</span>
+                        <span class="stat-label">Hours of Fun</span>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-indicator">
+                <span></span>
+            </div>
         </div>
+        
+        <!-- Game Filter Bar -->
+        <div class="game-filter-section" id="games">
+            <div class="filter-header">
+                <h2>Browse Games</h2>
+                <p>Filter games by category to find your favorite type of game</p>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="filter-tags">
+                    <button class="filter-tag active" data-filter="all">🎮 All Games</button>
+                    <button class="filter-tag" data-filter="puzzle">🧩 Puzzle</button>
+                    <button class="filter-tag" data-filter="arcade">🕹️ Arcade</button>
+                    <button class="filter-tag" data-filter="action">⚡ Action</button>
+                    <button class="filter-tag" data-filter="strategy">🧠 Strategy</button>
+                    <button class="filter-tag" data-filter="casual">🎯 Casual</button>
+                    <button class="filter-tag" data-filter="classic">👾 Classic</button>
+                    <button class="filter-tag" data-filter="desktop">💻 Desktop</button>
+                    <button class="filter-tag" data-filter="mobile">📱 Mobile</button>
+                </div>
+            </div>
+        </div>
+        
         <div class="games">
-            <div class="game-card">
-                <img src="./images/hero-images/memory-match.png" alt="Memory Match Game">
+            <div class="game-card" data-tags="puzzle,casual" data-name="Memory Match">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/memory-match.png" alt="Memory Match Game">
+                </div>
                 <h3>Memory Match</h3>
                 <p>Test your memory with this fun matching game!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./memory-match.html" class="play-now">Play Now</a>
+                <a href="./games/memory-match.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/brick-breaker.png" alt="Brick Breaker Arcade Game">
+            <div class="game-card" data-tags="arcade,action" data-name="Brick Breaker Arcade">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/brick-breaker.png" alt="Brick Breaker Arcade Game">
+                </div>
                 <h3>Brick Breaker Arcade</h3>
-                <p>Break the bricks, 3 lives, collect power ups!</p>
+                <p>Break the bricks, 3 lives, collect power-ups!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./brick-breaker.html" class="play-now">Play Now</a>
+                <a href="./games/brick-breaker.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/flappy-boy.png" alt="Flappy Boy Game">
+            <div class="game-card" data-tags="arcade,casual" data-name="Flappy Boy">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/flappy-boy.png" alt="Flappy Boy Game">
+                </div>
                 <h3>Flappy Boy</h3>
                 <p>Tap to fly and avoid obstacles on the way!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./flappy.html" class="play-now">Play Now</a>
+                <a href="./games/flappy.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/runner.png" alt="Runner Game">
+            <div class="game-card" data-tags="action,arcade" data-name="Runner">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/runner.png" alt="Runner Game">
+                </div>
                 <h3>Runner</h3>
                 <p>Endless running fun, jump over obstacles!</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./runner.html" class="play-now">Play Now</a>
+                <a href="./games/runner.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/image-puzzle.png" alt="Image puzzle Game">
+            <div class="game-card" data-tags="puzzle,casual" data-name="Image Puzzle">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/image-puzzle.png" alt="Image puzzle Game">
+                </div>
                 <h3>Image Puzzle</h3>
                 <p>Match the scrambled image puzzles.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./image-puzzle.html" class="play-now">Play Now</a>
+                <a href="./games/image-puzzle.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/battle-arena.png" alt="Battle arena fight simulator Game">
+            <div class="game-card" data-tags="action,strategy" data-name="Battle Arena Fight Simulator">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/battle-arena.png" alt="Battle arena fight simulator Game">
+                </div>
                 <h3>Battle Arena Fight Simulator</h3>
                 <p>Choose your hero and defeat enemies.</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🧠 Strategy</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./battle-arena-fight-simulator.html" class="play-now">Play Now</a>
+                <a href="./games/battle-arena-fight-simulator.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/maze-hunter.png" alt="Maze Hunter Game">
+            <div class="game-card" data-tags="puzzle,strategy" data-name="Maze Hunter">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/maze-hunter.png" alt="Maze Hunter Game">
+                </div>
                 <h3>Maze Hunter</h3>
                 <p>Navigate the maze and reach the exit.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">🧠 Strategy</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./maze-hunter.html" class="play-now">Play Now</a>
+                <a href="./games/maze-hunter.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/infinity-leap.png" alt="Infinity leap Game">
+            <div class="game-card" data-tags="arcade,casual" data-name="Infinity Leap">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/infinity-leap.png" alt="Infinity leap Game">
+                </div>
                 <h3>Infinity Leap</h3>
-                <p>Jump on ledge, collect coins, avoid red bomb.</p>
+                <p>Jump on the ledge, collect coins, and avoid the red bomba.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                </div>
                 <div class="platforms">🖥️</div>
-                <a href="./infinity-leap.html" class="play-now">Play Now</a>
+                <a href="./games/infinity-leap.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/a2-bros.png" alt="A2 Bros">
+            <div class="game-card" data-tags="action,classic" data-name="A2 Bros">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/a2-bros.png" alt="A2 Bros">
+                </div>
                 <h3>A2 Bros</h3>
                 <p>Classic platform adventure awaits!</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">👾 Classic</span>
+                    <span class="game-tag">💻 Desktop</span>
+                </div>
                 <div class="platforms">🖥️</div>
-                <a href="./a2bros.html" class="play-now">Play Now</a>
+                <a href="./games/a2bros.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/dodge.png" alt="Dodge Game">
+            <div class="game-card" data-tags="action,arcade" data-name="Dodge">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/dodge.png" alt="Dodge Game">
+                </div>
                 <h3>Dodge</h3>
                 <p>Dodge the falling obstacles by moving sideways!</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                </div>
                 <div class="platforms">🖥️</div>
-                <a href="./dodge.html" class="play-now">Play Now</a>
+                <a href="./games/dodge.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/2048.png" alt="2048 Game">
+            <div class="game-card" data-tags="puzzle,strategy" data-name="2048">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/2048.png" alt="2048 Game">
+                </div>
                 <h3>2048</h3>
                 <p>Join the numbers and get to the 2048 tile!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">🧠 Strategy</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./2048.html" class="play-now">Play Now</a>
+                <a href="./games/2048.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card" id="spaceShooterCard">
-                <img src="./images/hero-images/space-shooter.png" alt="Space Shooter Game">
+            <div class="game-card" data-tags="action,arcade" data-name="Space Shooter" id="spaceShooterCard">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/space-shooter.png" alt="Space Shooter Game">
+                </div>
                 <h3>Space Shooter</h3>
                 <p>Defend Earth from alien invasion! Fast-paced space combat action!</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                </div>
                 <div class="platforms">🖥️</div>
-                <a href="./space-shooter.html" class="play-now">Play Now</a>
+                <a href="./games/space-shooter.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/snake-game.png" alt="Snake Classic">
+            <div class="game-card" data-tags="classic,arcade" data-name="Snake Classic">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/snake-game.png" alt="Snake Classic">
+                </div>
                 <h3>Snake Classic</h3>
                 <p>Eat, grow, and avoid your tail in a clean neon grid.</p>
+                <div class="game-tags">
+                    <span class="game-tag">👾 Classic</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./snake.html" class="play-now">Play Now</a>
+                <a href="./games/snake.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/collect.png" alt="Color Catch">
+            <div class="game-card" data-tags="action,casual" data-name="Color Catch">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/collect.png" alt="Color Catch">
+                </div>
                 <h3>Color Catch</h3>
                 <p>Catch matching colors, dodge bombs, switch on the fly.</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./color-catch.html" class="play-now">Play Now</a>
+                <a href="./games/color-catch.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/mole.png" alt="Whack-a-Mole">
+            <div class="game-card" data-tags="arcade,casual" data-name="Whack-a-Mole">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/mole.png" alt="Whack-a-Mole">
+                </div>
                 <h3>Whack-a-Mole</h3>
                 <p>Tap the moles! Avoid red bombs. Simple and addictive.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./whack-a-mole.html" class="play-now">Play Now</a>
+                <a href="./games/whack-a-mole.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/Orbital.png" alt="Orbit Switch">
+            <div class="game-card" data-tags="arcade,casual" data-name="Orbit Switch">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/Orbital.png" alt="Orbit Switch">
+                </div>
                 <h3>Orbit Switch</h3>
                 <p>Switch orbits to dodge red hazards and collect rings.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./orbit-switch.html" class="play-now">Play Now</a>
+                <a href="./games/orbit-switch.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/pop.png" alt="Circle Pop">
+            <div class="game-card" data-tags="arcade,casual" data-name="Circle Pop">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/pop.png" alt="Circle Pop">
+                </div>
                 <h3>Circle Pop</h3>
                 <p>Tap colorful circles as they appear! Build combos for higher scores.</p>
+                <div class="game-tags">
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">🎯 Casual</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./circle-pop.html" class="play-now">Play Now</a>
+                <a href="./games/circle-pop.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="images/hero-images/sudoku.png" alt="Sudoku" />
+            <div class="game-card" data-tags="puzzle,strategy" data-name="Sudoku">
+                <div class="game-card-image-container">
+                    <img src="images/hero-images/sudoku.png" alt="Sudoku" />
+                </div>
                 <h3>Sudoku</h3>
                 <p>Challenge your logic with the classic 9x9 number puzzle!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">🧠 Strategy</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./sudoku.html" class="play-now">Play Now</a>
+                <a href="./games/sudoku.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="images/hero-images/grow-and-escape.png" alt="Grow and Escape" />
+            <div class="game-card" data-tags="puzzle,action" data-name="Grow and Escape">
+                <div class="game-card-image-container">
+                    <img src="images/hero-images/grow-and-escape.png" alt="Grow and Escape" />
+                </div>
                 <h3>Grow and Escape</h3>
                 <p>Navigate through challenging mazes!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">💻 Desktop</span>
+                </div>
                 <div class="platforms">🖥️</div>
-                <a href="./grow-and-escape.html" class="play-now">Play Now</a>
+                <a href="./games/grow-and-escape.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="images/hero-images/tic-tac-toe.png" alt="Tic Tac Toe" />
+            <div class="game-card" data-tags="classic,strategy" data-name="Tic Tac Toe">
+                <div class="game-card-image-container">
+                    <img src="images/hero-images/tic-tac-toe.png" alt="Tic Tac Toe" />
+                </div>
                 <h3>Tic Tac Toe</h3>
                 <p>A Classic game of Tic Tac Toe!</p>
+                <div class="game-tags">
+                    <span class="game-tag">👾 Classic</span>
+                    <span class="game-tag">🧠 Strategy</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="/tic-tac-toe.html" class="play-now">Play Now</a>
+                <a href="./games/tic-tac-toe.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="images/hero-images/number-shooter.png" alt="Number Shooter" />
+            <div class="game-card" data-tags="action,arcade" data-name="Number Shooter">
+                <div class="game-card-image-container">
+                    <img src="images/hero-images/number-shooter.png" alt="Number Shooter" />
+                </div>
                 <h3>Number Shooter</h3>
                 <p>Shoot the number and score points.</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="/number-shooter.html" class="play-now">Play Now</a>
+                <a href="./games/number-shooter.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="./images/hero-images/15-puzzle.png" alt="15 Puzzle">
+            <div class="game-card" data-tags="puzzle,classic" data-name="15 Puzzle">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/15-puzzle.png" alt="15 Puzzle">
+                </div>
                 <h3>15 Puzzle</h3>
                 <p>Slide the tiles to arrange them in order from 1 to 15!</p>
+                <div class="game-tags">
+                    <span class="game-tag">🧩 Puzzle</span>
+                    <span class="game-tag">👾 Classic</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="./15-puzzle.html" class="play-now">Play Now</a>
+                <a href="./games/15-puzzle.html" class="play-now">Play Now</a>
             </div>
-            <div class="game-card">
-                <img src="/images/hero-images/car-dodger.png" alt="Car Dodger">
+            <div class="game-card" data-tags="action,arcade" data-name="Car Dodger">
+                <div class="game-card-image-container">
+                    <img src="./images/hero-images/car-dodger.png" alt="Car Dodger">
+                </div>
                 <h3>Car Dodger</h3>
                 <p>Dodge oncoming cars and keep driving!</p>
+                <div class="game-tags">
+                    <span class="game-tag">⚡ Action</span>
+                    <span class="game-tag">🕹️ Arcade</span>
+                    <span class="game-tag">💻 Desktop</span>
+                    <span class="game-tag">📱 Mobile</span>
+                </div>
                 <div class="platforms">🖥️ 📱</div>
-                <a href="/car-dodger.html" class="play-now">Play Now</a>
+                <a href="./games/car-dodger.html" class="play-now">Play Now</a>
             </div>
         </div>
+
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="section-header">
+                <h2 class="section-title">About a2.games</h2>
+                <p class="section-subtitle">
+                    Your ultimate destination for free, browser-based gaming experiences.
+                    No downloads, no hassle, just pure entertainment.
+                    By <a href='https://raghu.ch/' target="_blank">Raghu Chinnannan</a>
+                </p>
+            </div>
+            <div class="about-content">
+                <div class="about-card">
+                    <span class="about-icon">🎮</span>
+                    <h3>Free Gaming</h3>
+                    <p>All our games are completely free to play - just pure gaming fun for everyone.</p>
+                </div>
+                <div class="about-card">
+                    <span class="about-icon">🌐</span>
+                    <h3>Browser Based</h3>
+                    <p>Play instantly in your web browser. No downloads, installations, or software required. Works on
+                        desktop, tablet, and mobile devices.</p>
+                </div>
+                <div class="about-card">
+                    <span class="about-icon">🚀</span>
+                    <h3>Always Growing</h3>
+                    <p>Our game collection is constantly expanding. New games are added regularly, ensuring fresh
+                        content and endless entertainment.</p>
+                </div>
+                <div class="about-card">
+                    <span class="about-icon">👥</span>
+                    <h3>Community Driven</h3>
+                    <p>Built by gamers, for gamers. Our open-source platform welcomes contributions from developers
+                        worldwide to create amazing gaming experiences.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section">
+            <div class="section-header">
+                <h2 class="section-title">Get in Touch</h2>
+                <p class="section-subtitle">
+                    Have questions, suggestions, or want to contribute? We'd love to hear from you!
+                </p>
+            </div>
+            <div class="contact-content">
+                <div class="contact-card">
+                    <div class="contact-icon">💻</div>
+                    <h3>Contribute on GitHub</h3>
+                    <p>Join our open-source community. Add your own games, fix bugs, or improve the platform.</p>
+                    <a href="https://github.com/raghuchinnannan/a2.games" target="_blank" class="contact-btn">
+                        <span>⭐</span> View on GitHub
+                    </a>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">🐛</div>
+                    <h3>Report Issues</h3>
+                    <p>Found a bug or have a feature request? Let us know through our GitHub issues page.</p>
+                    <a href="https://github.com/raghuchinnannan/a2.games/issues" target="_blank" class="contact-btn">
+                        <span>🔧</span> Report Issue
+                    </a>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">💡</div>
+                    <h3>Suggest Games</h3>
+                    <p>Have an idea for a new game? Share your suggestions and help us expand our collection.</p>
+                    <a href="https://github.com/raghuchinnannan/a2.games/issues" target="_blank"
+                        class="contact-btn">
+                        <span>💭</span> Share Ideas
+                    </a>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">📧</div>
+                    <h3>Direct Contact</h3>
+                    <p>For business inquiries, partnerships, or other questions, reach out directly.</p>
+                    <a href="mailto:info@a2.games" class="contact-btn">
+                        <span>✉️</span> Send Email
+                    </a>
+                </div>
+            </div>
+        </section>
     </div>
-    <div class="footer">
-        &copy; 2025 A2 Games. All rights reserved.
-    </div>
+
+    <!-- Professional Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-main">
+                <!-- About Section -->
+                <div class="footer-section">
+                    <h3>a2.games</h3>
+                    <p>Your ultimate destination for free browser-based games. No downloads, no installations, just pure
+                        gaming entertainment accessible anywhere, anytime.</p>
+                    <div class="footer-social">
+                        <a href="https://github.com/raghuchinnannan/a2.games" target="_blank" class="social-link"
+                            title="GitHub">
+                            <span>💻</span>
+                        </a>
+                        <a href="https://github.com/raghuchinnannan/a2.games/issues" target="_blank" class="social-link"
+                            title="Issues">
+                            <span>🐛</span>
+                        </a>
+                        <a href="mailto:info@a2.games" class="social-link" title="Email">
+                            <span>📧</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Games Section -->
+                <div class="footer-section">
+                    <h3>Popular Games</h3>
+                    <ul class="footer-links">
+                        <li><a href="./games/memory-match.html">🧠 Memory Match</a></li>
+                        <li><a href="./games/brick-breaker.html">🧱 Brick Breaker</a></li>
+                        <li><a href="./games/snake.html">🐍 Snake Classic</a></li>
+                        <li><a href="./games/2048.html">🔢 2048 Puzzle</a></li>
+                        <li><a href="./games/flappy.html">🐦 Flappy Boy</a></li>
+                        <li><a href="./games/sudoku.html">🧩 Sudoku</a></li>
+                    </ul>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#games">🎮 Browse Games</a></li>
+                        <li><a href="#about">ℹ️ About Us</a></li>
+                        <li><a href="#contact">📞 Contact</a></li>
+                        <li><a href="https://github.com/raghuchinnannan/a2.games" target="_blank">⭐ Star on GitHub</a>
+                        </li>
+                        <li><a href="https://github.com/raghuchinnannan/a2.games/issues" target="_blank">🔧 Report
+                                Issues</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    &copy; 2025 a2.games. All rights reserved. Built with ❤️ for gamers worldwide.
+                </div>
+                <ul class="footer-bottom-links">
+                    <!-- <li><a href="#privacy">Privacy Policy</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                    <li><a href="#cookies">Cookie Policy</a></li> -->
+                    <li><a href="https://github.com/raghuchinnannan/a2.games/blob/main/LICENSE"
+                            target="_blank">License</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
 </body>
 
 </html>
