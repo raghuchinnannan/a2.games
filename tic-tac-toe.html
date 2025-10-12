@@ -81,8 +81,8 @@
         }
 
         .color-picker-container input[type="color"] {
-          width: 3rem;
-          height: 3rem;
+          width: 2.2rem;
+          height: 2.2rem;
           border: none;
           outline: none;
           border-radius: 50%;
@@ -96,7 +96,12 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
 
-        
+      input[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+      } 
+      
 
         #reset-btn {
             padding: 1rem;
@@ -200,6 +205,13 @@
         let xColor = xColorPicker.value;
         let oColor = oColorPicker.value;
 
+      let xLabel = document.querySelector('label[for="xColor"]');
+      let oLabel = document.querySelector('label[for="oColor"]');
+
+      let colorLocked = false;
+
+      
+      
         xColorPicker.addEventListener("input", () => {
             xColor = xColorPicker.value;
         });
@@ -208,7 +220,23 @@
           oColor = oColorPicker.value;
         });
 
+      
+      xLabel.style.color = xColor;
+      oLabel.style.color = oColor;
 
+      xColorPicker.addEventListener("input", () => {
+        xColor = xColorPicker.value;
+        xLabel.style.color = xColor;
+        updateBorders();
+      });
+
+      oColorPicker.addEventListener("input", () => {
+        oColor = oColorPicker.value;
+        oLabel.style.color = oColor;
+        updateBorders();
+      });
+
+      
         
         const winPatterns = [
             [0, 1, 2],
@@ -222,16 +250,29 @@
         ];
 
         let cnt = 0;
+      
+      function lockColorPickers() {
+        xColorPicker.disabled = true;
+        oColorPicker.disabled = true;
+        colorLocked = true;
+      }
+
 
         const resetGame = () => {
             turnO = true;
             enableBoxes();
             msgContainer.classList.add("hide");
             cnt = 0;
+           colorLocked = false;
+          xColorPicker.disabled = false;
+           oColorPicker.disabled = false;
+
         };
 
         boxes.forEach((box) => {
             box.addEventListener("click", () => {
+              
+                if (!colorLocked) lockColorPickers();
                 if (turnO) {
                     box.innerText = "O";
                     box.style.color = oColor;
@@ -257,6 +298,16 @@
                 box.disabled = true;
             }
         }
+        
+        function updateBorders() {
+  boxes.forEach((box) => {
+    if (box.innerText === "X") {
+      box.style.border = `3px solid ${xColor}`;
+    } else if (box.innerText === "O") {
+      box.style.border = `3px solid ${oColor}`;
+    }
+  });
+}
 
         const enableBoxes = () => {
             for (let box of boxes) {
