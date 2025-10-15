@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            background-color: #000;
+            border: 1px solid #fff;
+            display: block;
+        }
+        #menuCard {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #000;
+            border: 3px solid #fff;
+            padding: 40px;
+            text-align: center;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        #menuCard h1 {
+            color: #fff;
+            margin: 0 0 30px 0;
+            font-size: 48px;
+        }
+        #menuCard p {
+            color: #fff;
+            font-size: 18px;
+            line-height: 1.6;
+            margin: 20px 0 30px 0;
+        }
+        .btn {
+            background-color: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background-color: #fff;
+            color: #000;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="pongCanvas" width="800" height="600"></canvas>
+        <div id="menuCard">
+            <h1>Pong Game</h1>
+            <p>
+                It's a two-player game (Player 1 uses W/S keys, Player 2 uses Up/Down arrows).<br>
+                The first to 5 points wins!
+            </p>
+            <button class="btn" id="startBtn" onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pongCanvas');
+        const ctx = canvas.getContext('2d');
+        const menuCard = document.getElementById('menuCard');
+        const startBtn = document.getElementById('startBtn');
+
+        const paddleWidth = 10;
+        const paddleHeight = 100;
+        const ballSize = 10;
+        let paddle1Y = (canvas.height - paddleHeight) / 2;
+        let paddle2Y = (canvas.height - paddleHeight) / 2;
+        let ballX = canvas.width / 2;
+        let ballY = canvas.height / 2;
+        let ballSpeedX = 5;
+        let ballSpeedY = 3;
+        let player1Score = 0;
+        let player2Score = 0;
+        const winningScore = 5;
+        let gameStarted = false;
+        let gameLoop;
+
+        let upPressed = false;
+        let downPressed = false;
+        let wPressed = false;
+        let sPressed = false;
+
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+
+        function keyDownHandler(e) {
+            if (e.key === 'ArrowUp') upPressed = true;
+            if (e.key === 'ArrowDown') downPressed = true;
+            if (e.key.toLowerCase() === 'w') wPressed = true;
+            if (e.key.toLowerCase() === 's') sPressed = true;
+        }
+
+        function keyUpHandler(e) {
+            if (e.key === 'ArrowUp') upPressed = false;
+            if (e.key === 'ArrowDown') downPressed = false;
+            if (e.key.toLowerCase() === 'w') wPressed = false;
+            if (e.key.toLowerCase() === 's') sPressed = false;
+        }
+
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        }
+
+        function drawCircle(x, y, r, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2, false);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawText(text, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.font = '45px Arial';
+            ctx.fillText(text, x, y);
+        }
+
+        function draw() {
+            drawRect(0, 0, canvas.width, canvas.height, '#000');
+
+            drawRect(0, paddle1Y, paddleWidth, paddleHeight, '#fff'); // Player 1
+            drawRect(canvas.width - paddleWidth, paddle2Y, paddleWidth, paddleHeight, '#fff'); // Player 2
+
+            drawCircle(ballX, ballY, ballSize, '#fff');
+
+            drawText(player1Score, canvas.width / 4, 100, '#fff');
+            drawText(player2Score, 3 * canvas.width / 4, 100, '#fff');
+
+            for (let i = 0; i < canvas.height; i += 40) {
+                drawRect(canvas.width / 2 - 1, i, 2, 20, '#fff');
+            }
+        }
+
+        function update() {
+            if (!gameStarted) return;
+
+            if (wPressed && paddle1Y > 0) paddle1Y -= 7;
+            if (sPressed && paddle1Y < canvas.height - paddleHeight) paddle1Y += 7;
+            if (upPressed && paddle2Y > 0) paddle2Y -= 7;
+            if (downPressed && paddle2Y < canvas.height - paddleHeight) paddle2Y += 7;
+
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballY <= 0 || ballY >= canvas.height) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            if (ballX <= paddleWidth && ballY > paddle1Y && ballY < paddle1Y + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+                let deltaY = ballY - (paddle1Y + paddleHeight / 2);
+                ballSpeedY = deltaY * 0.35;
+            } else if (ballX >= canvas.width - paddleWidth && ballY > paddle2Y && ballY < paddle2Y + paddleHeight) {
+                ballSpeedX = -ballSpeedX;
+                let deltaY = ballY - (paddle2Y + paddleHeight / 2);
+                ballSpeedY = deltaY * 0.35;
+            }
+
+            if (ballX < 0) {
+                player2Score++;
+                resetBall();
+            } else if (ballX > canvas.width) {
+                player1Score++;
+                resetBall();
+            }
+
+            if (player1Score >= winningScore || player2Score >= winningScore) {
+                gameStarted = false;
+                showWinnerScreen();
+            }
+        }
+
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = -ballSpeedX;
+            ballSpeedY = 3;
+        }
+
+        function resetGame() {
+            player1Score = 0;
+            player2Score = 0;
+            paddle1Y = (canvas.height - paddleHeight) / 2;
+            paddle2Y = (canvas.height - paddleHeight) / 2;
+            resetBall();
+        }
+
+        function startGame() {
+            menuCard.classList.add('hidden');
+            gameStarted = true;
+            resetGame();
+        }
+
+        function showWinnerScreen() {
+            const winner = player1Score >= winningScore ? 'Player 1' : 'Player 2';
+            menuCard.innerHTML = `
+                <h1>Pong Game</h1>
+                <p style="font-size: 28px; font-weight: bold;">${winner} Wins!</p>
+                <p>Final Score: ${player1Score} - ${player2Score}</p>
+                <button class="btn" onclick="newGame()">New Game</button>
+            `;
+            menuCard.classList.remove('hidden');
+        }
+
+        function newGame() {
+            menuCard.innerHTML = `
+                <h1>Pong Game</h1>
+                <p>
+                    It's a two-player game (Player 1 uses W/S keys, Player 2 uses Up/Down arrows).<br>
+                    The first to 5 points wins!
+                </p>
+                <button class="btn" onclick="startGame()">Start Game</button>
+            `;
+        }
+
+        function animate() {
+            draw();
+            update();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
