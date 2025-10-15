@@ -293,6 +293,24 @@
             transform: translateY(-2px);
         }
         
+        .back-btn {
+            padding: 15px 30px;
+            background-color: #f5b73c;
+            color: #0a0a23;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .back-btn:hover {
+            background-color: #f7c965;
+            transform: translateY(-2px);
+        }
+
+
         .stats {
             display: flex;
             justify-content: space-between;
@@ -395,6 +413,9 @@
             <div class="game-over" style="display: none;">
                 <div class="game-over-text">Victory!</div>
                 <button class="restart-btn">Play Again</button>
+                <br><br>
+                <a href="../index.html"><button class="back-btn">Back To Home Page</button></a>
+
             </div>
         </div>
     </div>
