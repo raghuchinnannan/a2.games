@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Tap Challenge</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  #gameStats {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px 25px;
+    border-radius: 10px;
+    text-align: right;
+  }
+  
+  #score {
+    font-size: 28px;
+    font-weight: bold;
+    color: #4CAF50;
+  }
+  
+  #timer {
+    font-size: 24px;
+    margin-top: 10px;
+    color: #FF9800;
+  }
+  
+  #startCard {
+    background: rgba(255, 255, 255, 0.1);
+    
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  #startCard h1 {
+    margin: 0 0 20px 0;
+    font-size: 36px;
+    color: #00d4ff;
+  }
+  
+  #startCard p {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    color: #ddd;
+  }
+  
+  #startBtn, #newGameBtn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-weight: bold;
+  }
+  
+  #startBtn:hover, #newGameBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  #target {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s;
+  }
+  
+  #target:hover {
+    transform: scale(1.1);
+  }
+  
+  #gameOverCard {
+    background: rgba(0, 0, 0, 0.9);
+    
+    padding: 50px;
+    border-radius: 20px;
+    text-align: center;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 2px solid #ff4444;
+  }
+  
+  #gameOverCard h2 {
+    color: #ff4444;
+    font-size: 48px;
+    margin: 0 0 20px 0;
+    animation: gameOverPulse 0.5s ease-in-out;
+  }
+  
+  #finalScore {
+    font-size: 72px;
+    font-weight: bold;
+    color: #00d4ff;
+    margin: 20px 0;
+    animation: scoreReveal 0.8s ease-out;
+  }
+  
+  #gameOverCard p {
+    font-size: 18px;
+    color: #aaa;
+    margin-bottom: 30px;
+  }
+  
+  @keyframes gameOverPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  @keyframes scoreReveal {
+    0% {
+      transform: scale(0) rotate(-180deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2) rotate(10deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="gameStats" style="display: none;">
+  <div id="score">Score: 0</div>
+  <div id="timer">Time: 60s</div>
+</div>
+
+<div id="startCard">
+  <h1>🎯 Quick Tap Challenge</h1>
+  <p>Tap the colored circles as fast as you can! Each circle appears for 2 seconds. You have 60 seconds to score as many points as possible. Miss a circle and it's game over!</p>
+  <button id="startBtn">Start Game</button>
+</div>
+
+<div id="gameOverCard">
+  <h2>Game Over!</h2>
+  <div id="finalScore">0</div>
+  <p>Score </p>
+  <button id="newGameBtn">Play Again</button>
+</div>
+
+<div id="target"></div>
+
+<script>
+(function(){
+  var scoreDisplay = document.getElementById('score'),
+      timerDisplay = document.getElementById('timer'),
+      target = document.getElementById('target'),
+      startCard = document.getElementById('startCard'),
+      gameOverCard = document.getElementById('gameOverCard'),
+      gameStats = document.getElementById('gameStats'),
+      startBtn = document.getElementById('startBtn'),
+      newGameBtn = document.getElementById('newGameBtn'),
+      finalScoreDisplay = document.getElementById('finalScore');
+  
+  var score = 0;
+  var timeLeft = 60;
+  var gameTimer;
+  var targetTimer;
+  var gameActive = false;
+  
+  function getRandomColor() {
+    return 'hsl(' + Math.random() * 360 + ', 70%, 60%)';
+  }
+  
+  function spawnTarget() {
+    if (!gameActive) return;
+    
+    clearTimeout(targetTimer);
+    var size = 80;
+    var maxX = window.innerWidth - size;
+    var maxY = window.innerHeight - size;
+    var x = Math.random() * maxX;
+    var y = Math.random() * maxY;
+    
+    target.style.left = x + 'px';
+    target.style.top = y + 'px';
+    target.style.backgroundColor = getRandomColor();
+    target.style.display = 'block';
+    
+    targetTimer = setTimeout(function() {
+      endGame();
+    }, 2000);
+  }
+  
+  target.addEventListener('click', function() {
+    if (!gameActive) return;
+    clearTimeout(targetTimer);
+    score++;
+    scoreDisplay.textContent = 'Score: ' + score;
+    spawnTarget();
+  });
+  
+  function startGameTimer() {
+    gameTimer = setInterval(function() {
+      timeLeft--;
+      timerDisplay.textContent = 'Time: ' + timeLeft + 's';
+      
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+  
+  function startGame() {
+    score = 0;
+    timeLeft = 60;
+    gameActive = true;
+    
+    startCard.style.display = 'none';
+    gameOverCard.style.display = 'none';
+    gameStats.style.display = 'block';
+    
+    scoreDisplay.textContent = 'Score: 0';
+    timerDisplay.textContent = 'Time: 60s';
+    
+    startGameTimer();
+    spawnTarget();
+  }
+  
+  function endGame() {
+    gameActive = false;
+    clearInterval(gameTimer);
+    clearTimeout(targetTimer);
+    
+    target.style.display = 'none';
+    gameStats.style.display = 'none';
+    
+    finalScoreDisplay.textContent = score;
+    gameOverCard.style.display = 'block';
+  }
+  
+  function resetGame() {
+    gameOverCard.style.display = 'none';
+    startCard.style.display = 'block';
+  }
+  
+  startBtn.addEventListener('click', startGame);
+  newGameBtn.addEventListener('click', resetGame);
+})();
+</script>
+</body>
+</html>
