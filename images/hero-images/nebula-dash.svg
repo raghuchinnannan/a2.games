@@ -1,0 +1,75 @@
+<svg width="512" height="384" viewBox="0 0 512 384" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#111936"/>
+      <stop offset="100%" stop-color="#050814"/>
+    </linearGradient>
+    <radialGradient id="glow-blue" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#77a8ff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#77a8ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-pink" cx="70%" cy="70%" r="60%">
+      <stop offset="0%" stop-color="#ff84d2" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ff84d2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ship" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9ab8ff"/>
+      <stop offset="100%" stop-color="#5c7cff"/>
+    </linearGradient>
+    <linearGradient id="comet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffdfa0" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#ff9272" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffcd70" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="384" fill="url(#bg)"/>
+  <rect width="512" height="384" fill="url(#glow-blue)"/>
+  <rect width="512" height="384" fill="url(#glow-pink)"/>
+
+  <g fill="#2c3c6b" opacity="0.65">
+    <circle cx="82" cy="54" r="2.5"/>
+    <circle cx="140" cy="90" r="1.5"/>
+    <circle cx="220" cy="32" r="3"/>
+    <circle cx="310" cy="62" r="2"/>
+    <circle cx="402" cy="48" r="2.4"/>
+    <circle cx="450" cy="100" r="1.7"/>
+    <circle cx="120" cy="160" r="2.2"/>
+    <circle cx="310" cy="150" r="1.9"/>
+    <circle cx="360" cy="210" r="2.6"/>
+    <circle cx="430" cy="182" r="2.1"/>
+    <circle cx="82" cy="240" r="1.6"/>
+    <circle cx="160" cy="270" r="2.8"/>
+    <circle cx="240" cy="240" r="2"/>
+    <circle cx="290" cy="300" r="1.9"/>
+    <circle cx="370" cy="320" r="2.3"/>
+  </g>
+
+  <g opacity="0.8">
+    <ellipse cx="140" cy="230" rx="26" ry="35" fill="rgba(120,180,255,0.08)"/>
+    <ellipse cx="240" cy="140" rx="32" ry="36" fill="rgba(255,140,220,0.12)"/>
+    <ellipse cx="360" cy="200" rx="24" ry="30" fill="rgba(96,180,255,0.15)"/>
+  </g>
+
+  <g transform="translate(256 240)">
+    <path d="M0 -60 L38 48 L-38 48 Z" fill="url(#ship)"/>
+    <path d="M0 -30 L20 32 L-20 32 Z" fill="#14204a"/>
+    <ellipse cx="0" cy="-10" rx="14" ry="18" fill="rgba(144,194,255,0.28)"/>
+  </g>
+
+  <g transform="translate(380 120) rotate(-18)">
+    <path d="M-12 -60 C-40 -35 -52 -10 -38 20 L-4 52 C12 72 38 60 40 40 L36 -10 C34 -30 12 -55 -12 -60 Z" fill="url(#comet)"/>
+    <path d="M-18 -28 L-6 -18" stroke="rgba(255,222,176,0.6)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(150 120)">
+    <circle cx="0" cy="0" r="22" fill="rgba(130,205,255,0.15)"/>
+    <circle cx="0" cy="0" r="12" fill="rgba(130,205,255,0.35)"/>
+    <circle cx="0" cy="0" r="6" fill="rgba(255,255,255,0.9)"/>
+  </g>
+
+  <g transform="translate(220 320)">
+    <circle cx="0" cy="0" r="20" fill="rgba(255,180,220,0.12)"/>
+    <circle cx="0" cy="0" r="9" fill="rgba(255,140,200,0.38)"/>
+    <circle cx="0" cy="0" r="4" fill="rgba(255,255,255,0.85)"/>
+  </g>
+</svg>
