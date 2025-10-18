@@ -20,54 +20,45 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px 16px 120px;
+            padding: 32px 16px 80px;
             overflow-x: hidden;
         }
 
         .game-shell {
             position: relative;
-            width: min(86vw, 520px);
-            aspect-ratio: 3 / 4;
+            width: min(92vw, 520px);
             border-radius: 20px;
             background: rgba(11, 17, 36, 0.85);
             backdrop-filter: blur(12px);
             box-shadow: 0 24px 68px rgba(8, 12, 28, 0.75), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-            padding: 18px;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            border-radius: 15px;
-            background: radial-gradient(circle at 50% 20%, rgba(91, 133, 255, 0.2), transparent 65%),
-                radial-gradient(circle at 20% 50%, rgba(247, 116, 211, 0.18), transparent 65%),
-                radial-gradient(circle at 80% 65%, rgba(84, 244, 255, 0.15), transparent 60%),
-                rgba(7, 11, 25, 0.92);
-            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.03);
+            padding: 24px 24px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
         }
 
         .hud {
-            position: absolute;
-            top: -68px;
-            left: 0;
-            right: 0;
+            width: 100%;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            pointer-events: none;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
         }
 
         .hud .badge {
-            background: rgba(14, 21, 44, 0.85);
+            flex: 1 1 120px;
+            min-width: 120px;
+            background: rgba(14, 21, 44, 0.92);
             border: 1px solid rgba(86, 153, 255, 0.25);
-            border-radius: 12px;
-            padding: 10px 14px;
+            border-radius: 14px;
+            padding: 12px 16px;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: 10px;
             color: #d7e3ff;
             text-shadow: 0 1px 0 rgba(8, 12, 20, 0.4);
         }
@@ -77,10 +68,29 @@
             color: #79a7ff;
         }
 
+        .stage {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: radial-gradient(circle at 50% 20%, rgba(91, 133, 255, 0.2), transparent 65%),
+                radial-gradient(circle at 20% 50%, rgba(247, 116, 211, 0.18), transparent 65%),
+                radial-gradient(circle at 80% 65%, rgba(84, 244, 255, 0.15), transparent 60%),
+                rgba(7, 11, 25, 0.92);
+        }
+
         .overlay {
             position: absolute;
-            inset: 18px;
-            border-radius: 15px;
+            inset: 0;
+            border-radius: 18px;
             background: linear-gradient(180deg, rgba(6, 10, 23, 0.94) 0%, rgba(8, 14, 32, 0.92) 100%);
             display: flex;
             flex-direction: column;
@@ -90,6 +100,7 @@
             gap: 20px;
             padding: 32px 26px;
             transition: opacity 0.25s ease;
+            overflow-y: auto;
         }
 
         .overlay.hidden {
@@ -175,12 +186,11 @@
         }
 
         .mobile-controls {
-            position: absolute;
-            bottom: -120px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
+            display: none;
             gap: 22px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 4px;
         }
 
         .control-btn {
@@ -202,27 +212,65 @@
             transform: scale(0.96);
         }
 
+        .control-hint {
+            display: none;
+            font-size: 14px;
+            color: rgba(202, 214, 255, 0.68);
+            text-align: center;
+            width: 100%;
+        }
+
         @media (min-width: 780px) {
             .control-btn {
                 display: none;
             }
         }
 
+        @media (max-width: 780px) {
+            .mobile-controls {
+                display: flex;
+            }
+
+            .control-hint {
+                display: block;
+            }
+        }
+
         @media (max-width: 520px) {
             .game-shell {
-                padding: 14px;
-                width: min(92vw, 460px);
+                padding: 18px;
+                width: min(96vw, 460px);
             }
 
             .overlay {
-                inset: 14px;
+                inset: 0;
                 padding: 24px 18px;
             }
 
+            .hud .badge {
+                flex: 1 1 calc(50% - 10px);
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .mobile-controls {
+                gap: 18px;
+            }
+
+            .control-btn {
+                width: 64px;
+                height: 64px;
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 360px) {
             .hud {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+                gap: 10px;
+            }
+
+            .hud .badge {
+                flex-basis: 100%;
             }
         }
     </style>
@@ -235,32 +283,35 @@
             <div class="badge">Best <span id="bestDisplay">0</span></div>
             <div class="badge">Lives <span id="livesDisplay">3</span></div>
         </div>
-        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        <div class="stage">
+            <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-        <div class="overlay" id="overlay">
-            <h1>Nebula Dash</h1>
-            <p>Dive through the neon nebula, collect energy orbs and dodge the rogue comets. Keep the
-                momentum going to build up your combo meter and chase a new high score.</p>
+            <div class="overlay" id="overlay">
+                <h1>Nebula Dash</h1>
+                <p>Dive through the neon nebula, collect energy orbs and dodge the rogue comets. Keep the
+                    momentum going to build up your combo meter and chase a new high score.</p>
 
-            <ul>
-                <li>🕹️ Move with <strong>←</strong> <strong>→</strong> or <strong>A</strong>/<strong>D</strong></li>
-                <li>📱 On touch devices use the glowing buttons below</li>
-                <li>💥 Colliding with a comet costs one life</li>
-                <li>⚡ Collecting orbs back-to-back grants bonus points</li>
-            </ul>
+                <ul>
+                    <li>🕹️ Move with <strong>←</strong> <strong>→</strong> or <strong>A</strong>/<strong>D</strong></li>
+                    <li>📱 On touch devices use the glowing buttons below</li>
+                    <li>💥 Colliding with a comet costs one life</li>
+                    <li>⚡ Collecting orbs back-to-back grants bonus points</li>
+                </ul>
 
-            <div class="stat-block">
-                <div class="stat-card">Last Score <span id="lastScore">0</span></div>
-                <div class="stat-card">Best Combo <span id="bestCombo">x1</span></div>
+                <div class="stat-block">
+                    <div class="stat-card">Last Score <span id="lastScore">0</span></div>
+                    <div class="stat-card">Best Combo <span id="bestCombo">x1</span></div>
+                </div>
+
+                <button id="startBtn">Start Run</button>
             </div>
-
-            <button id="startBtn">Start Run</button>
         </div>
 
         <div class="mobile-controls">
             <button class="control-btn" id="leftControl" aria-label="Move left">◀</button>
             <button class="control-btn" id="rightControl" aria-label="Move right">▶</button>
         </div>
+        <p class="control-hint">Tap the glowing buttons to steer.</p>
     </div>
 
     <script>
