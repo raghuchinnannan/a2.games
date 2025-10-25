@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nebula Dash</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(1200px 700px at 50% 5%, #1a2148 0%, #0b1029 60%, #050713 100%);
+            color: #f3f4ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 16px 80px;
+            overflow-x: hidden;
+        }
+
+        .game-shell {
+            position: relative;
+            width: min(92vw, 520px);
+            border-radius: 20px;
+            background: rgba(11, 17, 36, 0.85);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 24px 68px rgba(8, 12, 28, 0.75), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: 24px 24px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .hud .badge {
+            flex: 1 1 120px;
+            min-width: 120px;
+            background: rgba(14, 21, 44, 0.92);
+            border: 1px solid rgba(86, 153, 255, 0.25);
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #d7e3ff;
+            text-shadow: 0 1px 0 rgba(8, 12, 20, 0.4);
+        }
+
+        .hud .badge span {
+            font-weight: 700;
+            color: #79a7ff;
+        }
+
+        .stage {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: radial-gradient(circle at 50% 20%, rgba(91, 133, 255, 0.2), transparent 65%),
+                radial-gradient(circle at 20% 50%, rgba(247, 116, 211, 0.18), transparent 65%),
+                radial-gradient(circle at 80% 65%, rgba(84, 244, 255, 0.15), transparent 60%),
+                rgba(7, 11, 25, 0.92);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(6, 10, 23, 0.94) 0%, rgba(8, 14, 32, 0.92) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 20px;
+            padding: 32px 26px;
+            transition: opacity 0.25s ease;
+            overflow-y: auto;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .overlay h1 {
+            font-size: clamp(28px, 5vw, 36px);
+            font-weight: 700;
+            color: #95bdff;
+            text-shadow: 0 4px 14px rgba(59, 110, 255, 0.45);
+        }
+
+        .overlay p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(225, 232, 255, 0.82);
+        }
+
+        .overlay ul {
+            list-style: none;
+            text-align: left;
+            width: min(100%, 320px);
+            display: grid;
+            gap: 8px;
+            background: rgba(18, 26, 55, 0.7);
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid rgba(102, 155, 255, 0.22);
+        }
+
+        .overlay li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .overlay button {
+            background: linear-gradient(120deg, #5a8bff, #8e6bff);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: #0d142f;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 14px 30px rgba(94, 133, 255, 0.45);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .overlay button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 36px rgba(94, 133, 255, 0.55);
+        }
+
+        .overlay button:active {
+            transform: translateY(0);
+            box-shadow: 0 12px 22px rgba(94, 133, 255, 0.4);
+        }
+
+        .overlay .stat-block {
+            display: grid;
+            gap: 12px;
+            width: min(100%, 320px);
+        }
+
+        .stat-card {
+            background: rgba(19, 24, 44, 0.72);
+            border: 1px solid rgba(102, 155, 255, 0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #c6d5ff;
+        }
+
+        .stat-card span {
+            color: #7ea5ff;
+        }
+
+        .mobile-controls {
+            display: none;
+            gap: 22px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .control-btn {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            border: none;
+            background: radial-gradient(circle at 30% 30%, rgba(136, 176, 255, 0.55), rgba(52, 78, 150, 0.92));
+            box-shadow: 0 16px 28px rgba(20, 28, 58, 0.75), inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+            color: #0b1438;
+            font-size: 28px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            transform: scale(0.96);
+        }
+
+        .control-hint {
+            display: none;
+            font-size: 14px;
+            color: rgba(202, 214, 255, 0.68);
+            text-align: center;
+            width: 100%;
+        }
+
+        @media (min-width: 780px) {
+            .control-btn {
+                display: none;
+            }
+        }
+
+        @media (max-width: 780px) {
+            .mobile-controls {
+                display: flex;
+            }
+
+            .control-hint {
+                display: block;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .game-shell {
+                padding: 18px;
+                width: min(96vw, 460px);
+            }
+
+            .overlay {
+                inset: 0;
+                padding: 24px 18px;
+            }
+
+            .hud .badge {
+                flex: 1 1 calc(50% - 10px);
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .mobile-controls {
+                gap: 18px;
+            }
+
+            .control-btn {
+                width: 64px;
+                height: 64px;
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .hud {
+                gap: 10px;
+            }
+
+            .hud .badge {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-shell">
+        <div class="hud">
+            <div class="badge">Score <span id="scoreDisplay">0</span></div>
+            <div class="badge">Best <span id="bestDisplay">0</span></div>
+            <div class="badge">Lives <span id="livesDisplay">3</span></div>
+        </div>
+        <div class="stage">
+            <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+            <div class="overlay" id="overlay">
+                <h1>Nebula Dash</h1>
+                <p>Dive through the neon nebula, collect energy orbs and dodge the rogue comets. Keep the
+                    momentum going to build up your combo meter and chase a new high score.</p>
+
+                <ul>
+                    <li>🕹️ Move with <strong>←</strong> <strong>→</strong> or <strong>A</strong>/<strong>D</strong></li>
+                    <li>📱 On touch devices use the glowing buttons below</li>
+                    <li>💥 Colliding with a comet costs one life</li>
+                    <li>⚡ Collecting orbs back-to-back grants bonus points</li>
+                </ul>
+
+                <div class="stat-block">
+                    <div class="stat-card">Last Score <span id="lastScore">0</span></div>
+                    <div class="stat-card">Best Combo <span id="bestCombo">x1</span></div>
+                </div>
+
+                <button id="startBtn">Start Run</button>
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <button class="control-btn" id="leftControl" aria-label="Move left">◀</button>
+            <button class="control-btn" id="rightControl" aria-label="Move right">▶</button>
+        </div>
+        <p class="control-hint">Tap the glowing buttons to steer.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('startBtn');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const bestDisplay = document.getElementById('bestDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const lastScoreDisplay = document.getElementById('lastScore');
+        const bestComboDisplay = document.getElementById('bestCombo');
+        const leftControl = document.getElementById('leftControl');
+        const rightControl = document.getElementById('rightControl');
+
+        const CONFIG = {
+            baseOrbRate: 1.2,
+            baseMeteorRate: 2.6,
+            orbSpeed: [70, 150],
+            meteorSpeed: [100, 180],
+            maxLives: 3,
+            comboWindow: 2.4,
+            speedRamp: 0.012
+        };
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 70,
+            radius: 20,
+            vx: 0,
+            maxSpeed: 260,
+            acceleration: 600
+        };
+
+        const input = {
+            left: false,
+            right: false
+        };
+
+        function loadNumber(key, fallback) {
+            try {
+                const stored = localStorage.getItem(key);
+                return stored !== null ? Number(stored) : fallback;
+            } catch (error) {
+                console.warn(`[NebulaDash] Unable to read "${key}" from storage.`, error);
+                return fallback;
+            }
+        }
+
+        function saveNumber(key, value) {
+            try {
+                localStorage.setItem(key, String(value));
+            } catch (error) {
+                console.warn(`[NebulaDash] Unable to persist "${key}" to storage.`, error);
+            }
+        }
+
+        let entities = {
+            orbs: [],
+            meteors: []
+        };
+
+        const state = {
+            running: false,
+            score: 0,
+            best: loadNumber('nebulaDashBest', 0),
+            lives: CONFIG.maxLives,
+            combo: 1,
+            comboTimer: 0,
+            bestCombo: loadNumber('nebulaDashBestCombo', 1),
+            difficultyTimer: 0
+        };
+
+        let lastTime = 0;
+        let spawnCounters = {
+            orb: 0,
+            meteor: 0
+        };
+
+        function resetGame() {
+            entities = { orbs: [], meteors: [] };
+            state.score = 0;
+            state.lives = CONFIG.maxLives;
+            state.combo = 1;
+            state.comboTimer = 0;
+            state.difficultyTimer = 0;
+            spawnCounters.orb = 0;
+            spawnCounters.meteor = 0;
+            player.x = canvas.width / 2;
+            player.vx = 0;
+
+            updateHud();
+        }
+
+        function updateHud() {
+            scoreDisplay.textContent = state.score.toString();
+            livesDisplay.textContent = state.lives.toString();
+            bestDisplay.textContent = state.best.toString();
+        }
+
+        function startGame() {
+            resetGame();
+            overlay.classList.add('hidden');
+            state.running = true;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function finishGame() {
+            state.running = false;
+            overlay.classList.remove('hidden');
+            startBtn.textContent = 'Play Again';
+            lastScoreDisplay.textContent = state.score.toString();
+            bestComboDisplay.textContent = `x${state.bestCombo}`;
+        }
+
+        function spawnOrb() {
+            const difficultyFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
+            const radius = 14 + Math.random() * 6;
+            entities.orbs.push({
+                x: Math.random() * (canvas.width - radius * 2) + radius,
+                y: -radius,
+                radius,
+                speed: randomBetween(CONFIG.orbSpeed[0], CONFIG.orbSpeed[1]) * difficultyFactor,
+                hue: randomBetween(180, 230),
+                pulsing: Math.random() * Math.PI * 2
+            });
+        }
+
+        function spawnMeteor() {
+            const difficultyFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
+            const radius = 18 + Math.random() * 14;
+            entities.meteors.push({
+                x: Math.random() * (canvas.width - radius * 2) + radius,
+                y: -radius * 2,
+                radius,
+                speed: randomBetween(CONFIG.meteorSpeed[0], CONFIG.meteorSpeed[1]) * difficultyFactor,
+                rotation: Math.random() * Math.PI * 2,
+                spin: (Math.random() - 0.5) * 2.5
+            });
+        }
+
+        function updatePlayer(dt) {
+            const target = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+            player.vx += target * player.acceleration * dt;
+            player.vx *= target === 0 ? 0.82 : 0.94;
+            player.vx = clamp(player.vx, -player.maxSpeed, player.maxSpeed);
+            player.x += player.vx * dt;
+            player.x = clamp(player.x, player.radius + 8, canvas.width - player.radius - 8);
+        }
+
+        function updateEntities(dt) {
+            state.difficultyTimer += dt;
+            spawnCounters.orb += dt;
+            spawnCounters.meteor += dt;
+
+            const levelFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
+            const orbInterval = Math.max(0.35, CONFIG.baseOrbRate / levelFactor);
+            const meteorInterval = Math.max(0.6, CONFIG.baseMeteorRate / levelFactor);
+
+            if (spawnCounters.orb >= orbInterval) {
+                spawnOrb();
+                spawnCounters.orb = 0;
+            }
+
+            if (spawnCounters.meteor >= meteorInterval) {
+                spawnMeteor();
+                spawnCounters.meteor = 0;
+            }
+
+            entities.orbs.forEach((orb) => {
+                orb.y += orb.speed * dt;
+                orb.pulsing += dt * 3;
+            });
+
+            entities.meteors.forEach((meteor) => {
+                meteor.y += meteor.speed * dt;
+                meteor.rotation += meteor.spin * dt;
+            });
+
+            entities.orbs = entities.orbs.filter((orb) => orb.y - orb.radius < canvas.height + 20);
+            entities.meteors = entities.meteors.filter((meteor) => meteor.y - meteor.radius < canvas.height + 50);
+        }
+
+        function checkCollisions() {
+            for (let i = entities.orbs.length - 1; i >= 0; i--) {
+                const orb = entities.orbs[i];
+                if (circleIntersect(player, orb)) {
+                    entities.orbs.splice(i, 1);
+                    handleOrbCollection();
+                }
+            }
+
+            for (let i = entities.meteors.length - 1; i >= 0; i--) {
+                const meteor = entities.meteors[i];
+                if (circleIntersect(player, meteor)) {
+                    entities.meteors.splice(i, 1);
+                    handleMeteorImpact();
+                }
+            }
+        }
+
+        function handleOrbCollection() {
+            const comboBonus = Math.max(1, Math.round(state.combo));
+            state.score += 10 * comboBonus;
+            state.combo = Math.min(state.combo + 0.35, 6);
+            state.comboTimer = CONFIG.comboWindow;
+            if (comboBonus > state.bestCombo) {
+                state.bestCombo = comboBonus;
+                saveNumber('nebulaDashBestCombo', state.bestCombo);
+            }
+            updateHud();
+        }
+
+        function handleMeteorImpact() {
+            state.lives -= 1;
+            state.combo = 1;
+            state.comboTimer = 0;
+            if (state.lives <= 0) {
+                state.best = Math.max(state.best, state.score);
+                saveNumber('nebulaDashBest', state.best);
+                updateHud();
+                finishGame();
+                return;
+            }
+            updateHud();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackdrop();
+            drawPlayer();
+            entities.orbs.forEach(drawOrb);
+            entities.meteors.forEach(drawMeteor);
+            drawComboIndicator();
+        }
+
+        function drawBackdrop() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(45, 65, 130, 0.25)');
+            gradient.addColorStop(1, 'rgba(8, 12, 28, 0.6)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < 24; i++) {
+                const x = (i * 17 + performance.now() * 0.01) % canvas.width;
+                const y = (i * 53 + performance.now() * 0.04) % canvas.height;
+                const radius = (Math.sin(performance.now() * 0.001 + i) + 1.5) * 1.2;
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 5);
+                glow.addColorStop(0, 'rgba(108, 156, 255, 0.35)');
+                glow.addColorStop(1, 'rgba(108, 156, 255, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(x, y, radius * 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, player.radius + 20);
+            glow.addColorStop(0, 'rgba(120, 176, 255, 0.7)');
+            glow.addColorStop(1, 'rgba(120, 176, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, 0, player.radius + 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.rotate(player.vx * 0.0009);
+            ctx.fillStyle = '#8fb6ff';
+            ctx.beginPath();
+            ctx.moveTo(0, -player.radius);
+            ctx.lineTo(player.radius * 0.75, player.radius + 6);
+            ctx.lineTo(-player.radius * 0.75, player.radius + 6);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#1a234b';
+            ctx.beginPath();
+            ctx.moveTo(0, -player.radius * 0.6);
+            ctx.lineTo(player.radius * 0.3, player.radius * 0.4);
+            ctx.lineTo(-player.radius * 0.3, player.radius * 0.4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawOrb(orb) {
+            ctx.save();
+            ctx.translate(orb.x, orb.y);
+            const scale = 1 + Math.sin(orb.pulsing) * 0.12;
+            const gradient = ctx.createRadialGradient(0, 0, orb.radius * 0.2, 0, 0, orb.radius * 1.4 * scale);
+            gradient.addColorStop(0, `hsla(${orb.hue}, 95%, 82%, 0.9)`);
+            gradient.addColorStop(0.55, `hsla(${orb.hue}, 88%, 65%, 0.45)`);
+            gradient.addColorStop(1, `hsla(${orb.hue}, 80%, 55%, 0)`);
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, orb.radius * 1.4 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawMeteor(meteor) {
+            ctx.save();
+            ctx.translate(meteor.x, meteor.y);
+            ctx.rotate(meteor.rotation);
+            const gradient = ctx.createLinearGradient(-meteor.radius, -meteor.radius, meteor.radius, meteor.radius);
+            gradient.addColorStop(0, 'rgba(255, 173, 121, 0.15)');
+            gradient.addColorStop(0.3, 'rgba(255, 114, 136, 0.25)');
+            gradient.addColorStop(1, 'rgba(255, 215, 114, 0.4)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.moveTo(0, -meteor.radius);
+            ctx.lineTo(meteor.radius * 0.65, 0);
+            ctx.lineTo(0, meteor.radius);
+            ctx.lineTo(-meteor.radius * 0.65, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(254, 214, 130, 0.28)';
+            ctx.beginPath();
+            ctx.arc(-meteor.radius * 0.35, 0, meteor.radius * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawComboIndicator() {
+            if (state.combo <= 1) return;
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, state.combo / 5);
+            ctx.fillStyle = '#6fa1ff';
+            ctx.font = '700 24px Poppins, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Combo x${Math.round(state.combo)}`, canvas.width / 2, 38);
+            ctx.restore();
+        }
+
+        function gameLoop(timestamp) {
+            if (!state.running) {
+                return;
+            }
+
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+
+            if (state.comboTimer > 0) {
+                state.comboTimer -= dt;
+            } else if (state.combo > 1) {
+                state.combo = Math.max(1, state.combo - dt * 1.2);
+            }
+
+            updatePlayer(dt);
+            updateEntities(dt);
+            checkCollisions();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function circleIntersect(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const r = a.radius + b.radius;
+            return dx * dx + dy * dy <= r * r;
+        }
+
+        function randomBetween(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function resizeCanvas() {
+            const ratio = canvas.width / canvas.height;
+            const wrapper = canvas.parentElement;
+            const bounds = wrapper.getBoundingClientRect();
+            const width = bounds.width;
+            const height = width / ratio;
+            canvas.style.height = `${height}px`;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && !state.running) {
+                startGame();
+                return;
+            }
+
+            switch (event.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    input.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    input.right = true;
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    input.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    input.right = false;
+                    break;
+            }
+        });
+
+        function bindControlButton(element, direction) {
+            const set = (state) => {
+                input[direction] = state;
+            };
+
+            element.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                set(true);
+                element.setPointerCapture(event.pointerId);
+            });
+
+            element.addEventListener('pointerup', (event) => {
+                event.preventDefault();
+                set(false);
+                element.releasePointerCapture(event.pointerId);
+            });
+
+            element.addEventListener('pointercancel', () => set(false));
+            element.addEventListener('lostpointercapture', () => set(false));
+        }
+
+        bindControlButton(leftControl, 'left');
+        bindControlButton(rightControl, 'right');
+
+        startBtn.addEventListener('click', startGame);
+
+        updateHud();
+        bestDisplay.textContent = state.best.toString();
+        bestComboDisplay.textContent = `x${state.bestCombo}`;
+    </script>
+</body>
+
+</html>
