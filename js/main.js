@@ -336,10 +336,29 @@ const observer = new IntersectionObserver((entries) => {
 document.addEventListener('DOMContentLoaded', () => {
     const gameCards = document.querySelectorAll('.game-card');
     gameCards.forEach(card => {
+        // Set up card animations
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
+
+        // Set up background image
+        const imageContainer = card.querySelector('.game-card-image-container');
+        const img = imageContainer.querySelector('img');
+        if (img) {
+            imageContainer.style.setProperty('--bg-image', `url(${img.src})`);
+        }
+
+        // Make entire card clickable
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking on an interactive element
+            if (!e.target.closest('a, button')) {
+                const playNowLink = card.querySelector('.play-now');
+                if (playNowLink) {
+                    playNowLink.click();
+                }
+            }
+        });
     });
 });
 
