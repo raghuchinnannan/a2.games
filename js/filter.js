@@ -1,6 +1,7 @@
 /**
  * Game Filter System - Optimized for Performance
  * Handles category filtering and search functionality efficiently
+ * Now supports dynamic game loading
  */
 
 class GameFilter {
@@ -33,33 +34,48 @@ class GameFilter {
             this.filterButtons = document.querySelectorAll('.filter-tag');
             this.searchInput = document.getElementById('gameSearch');
             this.gamesContainer = document.querySelector('.games');
-            this.gameCards = Array.from(document.querySelectorAll('.game-card'));
-
-            if (!this.gameCards.length) {
-                console.warn('No game cards found');
-                return;
+            
+            // Set up event listeners (only once)
+            if (!this.isInitialized) {
+                this.setupEventListeners();
             }
-
-            // Initialize game data for faster filtering
-            this.initGameData();
             
-            // Ensure "All Games" filter is active by default
-            this.setActiveFilter('all');
-            
-            // Set up event listeners
-            this.setupEventListeners();
-            
-            // Initial render - show all games
-            this.filteredGames = [...this.gameCards]; // Show all games initially
-            this.renderGames();
-            this.updateGameCount();
-            
-            this.isInitialized = true;
-            // console.log(`Game filter initialized with ${this.gameCards.length} games`);
+            // Load game cards
+            this.loadGameCards();
             
         } catch (error) {
             console.error('Error initializing game filter:', error);
         }
+    }
+
+    loadGameCards() {
+        this.gameCards = Array.from(document.querySelectorAll('.game-card'));
+
+        if (!this.gameCards.length) {
+            console.warn('No game cards found - waiting for dynamic load');
+            return;
+        }
+
+        // Initialize game data for faster filtering
+        this.initGameData();
+        
+        // Ensure "All Games" filter is active by default
+        this.setActiveFilter(this.currentFilter);
+        
+        // Initial render - show all games
+        this.filteredGames = [...this.gameCards];
+        this.renderGames();
+        this.updateGameCount();
+        
+        this.isInitialized = true;
+        console.log(`Game filter initialized with ${this.gameCards.length} games`);
+    }
+
+    // New method to reinitialize after dynamic game loading
+    reinitialize() {
+        console.log('Reinitializing game filter...');
+        this.loadGameCards();
+        this.filterAndRender();
     }
 
     initGameData() {
@@ -67,8 +83,8 @@ class GameFilter {
         this.gameCards.forEach((card, index) => {
             const tags = (card.dataset.tags || '').toLowerCase().split(',').map(tag => tag.trim());
             const name = (card.dataset.name || '').toLowerCase();
+            
             // Auto-detect platform support from the visual platforms element (if present)
-            // This ensures filters for 'mobile' and 'desktop' work even if HTML wasn't updated.
             const platformsEl = card.querySelector('.platforms');
             if (platformsEl) {
                 const platformsText = platformsEl.textContent || '';
@@ -135,6 +151,11 @@ class GameFilter {
     handleFilterClick(e) {
         e.preventDefault();
         
+        if (!this.gameCards.length) {
+            console.warn('No games loaded yet');
+            return;
+        }
+        
         // Update active filter button
         this.filterButtons.forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
@@ -145,6 +166,8 @@ class GameFilter {
     }
 
     filterAndRender() {
+        if (!this.gameCards.length) return;
+        
         // Filter games based on current criteria
         this.filteredGames = this.gameCards.filter(card => {
             const data = card._filterData;
@@ -195,16 +218,13 @@ class GameFilter {
             }
         });
 
-        // Log filter results for debugging
-        // console.log(`Filtered: ${this.filteredGames.length}/${this.gameCards.length} games`);
+        console.log(`Filtered: ${this.filteredGames.length}/${this.gameCards.length} games`);
     }
 
     updateGameCount() {
         const visibleCount = this.filteredGames.length;
         
         // Update the hero stats only when explicitly opted-in.
-        // To enable dynamic updates for a stat, add the attribute
-        // `data-auto-count` to the corresponding `.stat-number` element in HTML.
         const statNumbers = document.querySelectorAll('.stat-number[data-auto-count]');
         statNumbers.forEach(stat => {
             const text = stat.textContent;
@@ -219,7 +239,7 @@ class GameFilter {
             const categoryName = this.currentFilter.charAt(0).toUpperCase() + this.currentFilter.slice(1);
             filterHeader.textContent = `Showing ${visibleCount} ${categoryName} games`;
         } else if (filterHeader) {
-            filterHeader.textContent = `Filter games by category or search by name`;
+            filterHeader.textContent = `Filter games by category to find your favorite type of game`;
         }
     }
 
@@ -254,6 +274,9 @@ class GameFilter {
 
 // Initialize the game filter system
 const gameFilter = new GameFilter();
+
+// Make it globally accessible
+window.gameFilter = gameFilter;
 
 // Export for potential external use
 if (typeof module !== 'undefined' && module.exports) {

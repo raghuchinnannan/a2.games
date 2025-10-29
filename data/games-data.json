@@ -1,0 +1,247 @@
+{
+  "games": [
+    {
+      "id": "memory-match",
+      "name": "Memory Match",
+      "description": "Test your memory with this fun matching game!",
+      "image": "./images/hero-images/memory-match.png",
+      "url": "./games/memory-match.html",
+      "tags": ["puzzle", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "brick-breaker",
+      "name": "Brick Breaker Arcade",
+      "description": "Break the bricks, 3 lives, collect power-ups!",
+      "image": "./images/hero-images/brick-breaker.png",
+      "url": "./games/brick-breaker.html",
+      "tags": ["arcade", "action"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "flappy-boy",
+      "name": "Flappy Boy",
+      "description": "Tap to fly and avoid obstacles on the way!",
+      "image": "./images/hero-images/flappy-boy.png",
+      "url": "./games/flappy.html",
+      "tags": ["arcade", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "runner",
+      "name": "Runner",
+      "description": "Endless running fun, jump over obstacles!",
+      "image": "./images/hero-images/runner.png",
+      "url": "./games/runner.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "image-puzzle",
+      "name": "Image Puzzle",
+      "description": "Match the scrambled image puzzles.",
+      "image": "./images/hero-images/image-puzzle.png",
+      "url": "./games/image-puzzle.html",
+      "tags": ["puzzle", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "battle-arena",
+      "name": "Battle Arena Fight Simulator",
+      "description": "Choose your hero and defeat enemies.",
+      "image": "./images/hero-images/battle-arena.png",
+      "url": "./games/battle-arena-fight-simulator.html",
+      "tags": ["action", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "maze-hunter",
+      "name": "Maze Hunter",
+      "description": "Navigate the maze and reach the exit.",
+      "image": "./images/hero-images/maze-hunter.png",
+      "url": "./games/maze-hunter.html",
+      "tags": ["puzzle", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "infinity-leap",
+      "name": "Infinity Leap",
+      "description": "Jump on the ledge, collect coins, and avoid the red bomba.",
+      "image": "./images/hero-images/infinity-leap.png",
+      "url": "./games/infinity-leap.html",
+      "tags": ["arcade", "casual"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "a2-bros",
+      "name": "A2 Bros",
+      "description": "Classic platform adventure awaits!",
+      "image": "./images/hero-images/a2-bros.png",
+      "url": "./games/a2bros.html",
+      "tags": ["action", "classic"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "dodge",
+      "name": "Dodge",
+      "description": "Dodge the falling obstacles by moving sideways!",
+      "image": "./images/hero-images/dodge.png",
+      "url": "./games/dodge.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "2048",
+      "name": "2048",
+      "description": "Join the numbers and get to the 2048 tile!",
+      "image": "./images/hero-images/2048.png",
+      "url": "./games/2048.html",
+      "tags": ["puzzle", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "space-shooter",
+      "name": "Space Shooter",
+      "description": "Defend Earth from alien invasion! Fast-paced space combat action!",
+      "image": "./images/hero-images/space-shooter.png",
+      "url": "./games/space-shooter.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "nebula-dash",
+      "name": "Nebula Dash",
+      "description": "Weave through the glowing nebula, catch energy orbs, dodge rogue comets.",
+      "image": "./images/hero-images/nebula-dash.svg",
+      "url": "./games/nebula-dash.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "snake-classic",
+      "name": "Snake Classic",
+      "description": "Eat, grow, and avoid your tail in a clean neon grid.",
+      "image": "./images/hero-images/snake-game.png",
+      "url": "./games/snake.html",
+      "tags": ["classic", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "color-catch",
+      "name": "Color Catch",
+      "description": "Catch matching colors, dodge bombs, switch on the fly.",
+      "image": "./images/hero-images/collect.png",
+      "url": "./games/color-catch.html",
+      "tags": ["action", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "whack-a-mole",
+      "name": "Whack-a-Mole",
+      "description": "Tap the moles! Avoid red bombs. Simple and addictive.",
+      "image": "./images/hero-images/mole.png",
+      "url": "./games/whack-a-mole.html",
+      "tags": ["arcade", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "orbit-switch",
+      "name": "Orbit Switch",
+      "description": "Switch orbits to dodge red hazards and collect rings.",
+      "image": "./images/hero-images/Orbital.png",
+      "url": "./games/orbit-switch.html",
+      "tags": ["arcade", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "circle-pop",
+      "name": "Circle Pop",
+      "description": "Tap colorful circles as they appear! Build combos for higher scores.",
+      "image": "./images/hero-images/pop.png",
+      "url": "./games/circle-pop.html",
+      "tags": ["arcade", "casual"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "sudoku",
+      "name": "Sudoku",
+      "description": "Challenge your logic with the classic 9x9 number puzzle!",
+      "image": "images/hero-images/sudoku.png",
+      "url": "./games/sudoku.html",
+      "tags": ["puzzle", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "grow-and-escape",
+      "name": "Grow and Escape",
+      "description": "Navigate through challenging mazes!",
+      "image": "images/hero-images/grow-and-escape.png",
+      "url": "./games/grow-and-escape.html",
+      "tags": ["puzzle", "action"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "tic-tac-toe",
+      "name": "Tic Tac Toe",
+      "description": "A Classic game of Tic Tac Toe!",
+      "image": "images/hero-images/tic-tac-toe.png",
+      "url": "./games/tic-tac-toe.html",
+      "tags": ["classic", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "number-shooter",
+      "name": "Number Shooter",
+      "description": "Shoot the number and score points.",
+      "image": "images/hero-images/number-shooter.png",
+      "url": "./games/number-shooter.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "15-puzzle",
+      "name": "15 Puzzle",
+      "description": "Slide the tiles to arrange them in order from 1 to 15!",
+      "image": "./images/hero-images/15-puzzle.png",
+      "url": "./games/15-puzzle.html",
+      "tags": ["puzzle", "classic"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "car-dodger",
+      "name": "Car Dodger",
+      "description": "Dodge oncoming cars and keep driving!",
+      "image": "./images/hero-images/car-dodger.png",
+      "url": "./games/car-dodger.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "pong-game",
+      "name": "Pong game",
+      "description": "Classic 2 player Pong game!",
+      "image": "./images/hero-images/pong.png",
+      "url": "./games/pong-game.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop"]
+    },
+    {
+      "id": "quick-tap",
+      "name": "Quick Tap game",
+      "description": "Fastest finger, quickly tap bubbles!",
+      "image": "./images/hero-images/quick-tap.png",
+      "url": "./games/quick-tap.html",
+      "tags": ["casual", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "word-scramble-rush",
+      "name": "Word Scramble Rush",
+      "description": "Unscramble words as fast as you can!",
+      "image": "./images/hero-images/word-scramble-rush.png",
+      "url": "./games/word-scramble-rush.html",
+      "tags": ["puzzle", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    }
+  ]
+}
