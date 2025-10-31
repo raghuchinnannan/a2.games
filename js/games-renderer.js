@@ -7,7 +7,8 @@ const GameRenderer = {
     action: { emoji: '⚡', label: 'Action' },
     strategy: { emoji: '🧠', label: 'Strategy' },
     casual: { emoji: '🎯', label: 'Casual' },
-    classic: { emoji: '👾', label: 'Classic' }
+    classic: { emoji: '👾', label: 'Classic' },
+    logic: { emoji: '🤔', label: 'Logic' }
   },
 
   // Platform icons
@@ -34,8 +35,12 @@ const GameRenderer = {
     // Game tags
     const tagsHTML = game.tags.map(tag => {
       const config = this.tagConfig[tag];
+      if (!config) {
+        console.warn(`Tag "${tag}" not found in tagConfig for game "${game.name}"`);
+        return '';
+      }
       return `<span class="game-tag">${config.emoji} ${config.label}</span>`;
-    }).join('');
+    }).filter(html => html).join('');
 
     // Platform tags
     const platformTagsHTML = game.platforms.map(p => {

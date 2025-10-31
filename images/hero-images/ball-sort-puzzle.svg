@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Ball gradients for 3D effect -->
+    <radialGradient id="redBall" cx="35%" cy="35%">
+      <stop offset="0%" style="stop-color:#ff6666;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cc0000;stop-opacity:1" />
+    </radialGradient>
+    
+    <radialGradient id="blueBall" cx="35%" cy="35%">
+      <stop offset="0%" style="stop-color:#6666ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0000cc;stop-opacity:1" />
+    </radialGradient>
+    
+    <radialGradient id="greenBall" cx="35%" cy="35%">
+      <stop offset="0%" style="stop-color:#66ff66;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00cc00;stop-opacity:1" />
+    </radialGradient>
+    
+    <radialGradient id="yellowBall" cx="35%" cy="35%">
+      <stop offset="0%" style="stop-color:#ffff66;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cccc00;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <rect width="400" height="300" fill="url(#bgGrad)"/>
+  
+  <!-- Title -->
+  <text x="200" y="40" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFD700" text-anchor="middle" stroke="#000" stroke-width="1">
+    Ball Sort Puzzle
+  </text>
+  
+  <!-- Tubes -->
+  <!-- Tube 1 - Mixed -->
+  <g transform="translate(50, 80)">
+    <rect x="0" y="0" width="45" height="160" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" stroke-width="3" rx="8"/>
+    <circle cx="22.5" cy="135" r="18" fill="url(#redBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="100" r="18" fill="url(#blueBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="65" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="30" r="18" fill="url(#yellowBall)" stroke="#fff" stroke-width="2"/>
+  </g>
+  
+  <!-- Tube 2 - Mixed -->
+  <g transform="translate(115, 80)">
+    <rect x="0" y="0" width="45" height="160" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" stroke-width="3" rx="8"/>
+    <circle cx="22.5" cy="135" r="18" fill="url(#blueBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="100" r="18" fill="url(#redBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="65" r="18" fill="url(#yellowBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="30" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+  </g>
+  
+  <!-- Tube 3 - Sorted (Green) -->
+  <g transform="translate(180, 80)">
+    <rect x="0" y="0" width="45" height="160" fill="rgba(255,255,255,0.1)" stroke="#00ff00" stroke-width="3" rx="8"/>
+    <circle cx="22.5" cy="135" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="100" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="65" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="30" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <!-- Checkmark -->
+    <path d="M 15 -10 L 20 -5 L 30 -15" stroke="#00ff00" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Tube 4 - Mixed -->
+  <g transform="translate(245, 80)">
+    <rect x="0" y="0" width="45" height="160" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" stroke-width="3" rx="8"/>
+    <circle cx="22.5" cy="135" r="18" fill="url(#yellowBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="100" r="18" fill="url(#greenBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="65" r="18" fill="url(#blueBall)" stroke="#fff" stroke-width="2"/>
+    <circle cx="22.5" cy="30" r="18" fill="url(#redBall)" stroke="#fff" stroke-width="2"/>
+  </g>
+  
+  <!-- Tube 5 - Empty -->
+  <g transform="translate(310, 80)">
+    <rect x="0" y="0" width="45" height="160" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" stroke-width="3" rx="8"/>
+  </g>
+  
+  <!-- Arrow indicating movement -->
+  <g transform="translate(200, 260)">
+    <path d="M -20 0 L 20 0" stroke="#FFD700" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 10 -8 L 20 0 L 10 8" stroke="#FFD700" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="0" y="-15" font-family="Arial" font-size="14" font-weight="bold" fill="#FFD700" text-anchor="middle">Click to Sort!</text>
+  </g>
+</svg>

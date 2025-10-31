@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Sort Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        #gameContainer {
+            text-align: center;
+            position: relative;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        #startScreen, #winScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #FFD700;
+            z-index: 100;
+            min-width: 400px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        #startScreen h1, #winScreen h2 {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        #startScreen p, #winScreen p {
+            font-size: 18px;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .instructions {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        .button {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .button:hover {
+            background: #FFA500;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(255, 165, 0, 0.5);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        #backButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #ff4444;
+            z-index: 200;
+        }
+
+        #backButton:hover {
+            background: #ff0000;
+        }
+
+        #gameInfo {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin: 5px;
+            min-width: 150px;
+        }
+
+        .info-label {
+            color: #FFD700;
+            margin-right: 10px;
+        }
+
+        #tubesContainer {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+
+        .tube {
+            width: 60px;
+            height: 240px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column-reverse;
+            padding: 5px;
+            gap: 2px;
+        }
+
+        .tube:hover {
+            border-color: #FFD700;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .tube.selected {
+            border-color: #00ff00;
+            border-width: 5px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .ball {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+                        inset 5px 5px 10px rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 12px 25px;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #FFD700;
+        }
+
+        #winScreen {
+            display: none;
+        }
+
+        .moves-display {
+            font-size: 20px;
+            margin: 10px 0;
+            color: #FFD700;
+        }
+
+        @media (max-width: 768px) {
+            #startScreen, #winScreen {
+                min-width: 90%;
+                padding: 30px 20px;
+            }
+
+            #startScreen h1, #winScreen h2 {
+                font-size: 32px;
+            }
+
+            .tube {
+                width: 50px;
+                height: 200px;
+            }
+
+            .ball {
+                width: 40px;
+                height: 40px;
+            }
+
+            #gameInfo {
+                font-size: 18px;
+            }
+
+            .button {
+                font-size: 18px;
+                padding: 12px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <a href="../index.html"><button id="backButton" class="button">← Back</button></a>
+
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h1>🎨 Ball Sort Puzzle</h1>
+            <p><strong>How to Play:</strong></p>
+            <div class="instructions">
+                <ul>
+                    <li>🎯 Sort the colored balls into tubes</li>
+                    <li>📍 Click a tube to select it</li>
+                    <li>🔄 Click another tube to move the top ball</li>
+                    <li>✅ Each tube must contain balls of only ONE color</li>
+                    <li>⚠️ You can only place a ball on another ball of the same color or in an empty tube</li>
+                    <li>🎮 Use Undo to reverse your last move</li>
+                    <li>🔄 Use Restart to begin again</li>
+                </ul>
+            </div>
+            <button class="button" onclick="startGame()">START GAME</button>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="winScreen">
+            <h2>🎉 CONGRATULATIONS!</h2>
+            <p class="moves-display">Moves: <span id="finalMoves">0</span></p>
+            <p>You sorted all the balls!</p>
+            <button class="button" onclick="nextLevel()">Next Level</button>
+            <button class="button" onclick="restartGame()">Play Again</button>
+            <a href="../index.html"><button class="button" style="background: #666;">Back to Home</button></a>
+        </div>
+
+        <!-- Game Info -->
+        <div id="gameInfo" style="display: none;">
+            <div class="info-item">
+                <span class="info-label">Level:</span>
+                <span id="level">1</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Moves:</span>
+                <span id="moves">0</span>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="controls" style="display: none;" id="controls">
+            <button class="control-btn" onclick="undoMove()">↶ Undo</button>
+            <button class="control-btn" onclick="restartLevel()">🔄 Restart</button>
+            <button class="control-btn" onclick="showHint()">💡 Hint</button>
+        </div>
+
+        <!-- Tubes Container -->
+        <div id="tubesContainer"></div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = 'start';
+        let level = 1;
+        let moves = 0;
+        let tubes = [];
+        let selectedTube = null;
+        let moveHistory = [];
+        const BALLS_PER_TUBE = 4;
+
+        // Color palette
+        const colors = [
+            '#FF0000', // Red
+            '#00FF00', // Green
+            '#0000FF', // Blue
+            '#FFFF00', // Yellow
+            '#FF00FF', // Magenta
+            '#00FFFF', // Cyan
+            '#FFA500', // Orange
+            '#800080', // Purple
+            '#FFC0CB', // Pink
+            '#00FF7F', // Spring Green
+            '#FF1493', // Deep Pink
+            '#FFD700'  // Gold
+        ];
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameInfo').style.display = 'flex';
+            document.getElementById('controls').style.display = 'flex';
+            gameState = 'playing';
+            initLevel();
+        }
+
+        function initLevel() {
+            moves = 0;
+            selectedTube = null;
+            moveHistory = [];
+            updateUI();
+            
+            // Calculate number of tubes and colors based on level
+            const numColors = Math.min(3 + level, 8); // 4 to 8 colors max
+            const numTubes = numColors + 2; // Extra empty tubes for maneuvering
+            
+            // Create tubes
+            tubes = [];
+            
+            // Create filled tubes with mixed colors
+            const ballsPool = [];
+            for (let i = 0; i < numColors; i++) {
+                for (let j = 0; j < BALLS_PER_TUBE; j++) {
+                    ballsPool.push(colors[i]);
+                }
+            }
+            
+            // Shuffle balls
+            for (let i = ballsPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ballsPool[i], ballsPool[j]] = [ballsPool[j], ballsPool[i]];
+            }
+            
+            // Distribute balls into tubes
+            for (let i = 0; i < numColors; i++) {
+                tubes.push(ballsPool.slice(i * BALLS_PER_TUBE, (i + 1) * BALLS_PER_TUBE));
+            }
+            
+            // Add empty tubes
+            for (let i = 0; i < 2; i++) {
+                tubes.push([]);
+            }
+            
+            renderTubes();
+        }
+
+        function renderTubes() {
+            const container = document.getElementById('tubesContainer');
+            container.innerHTML = '';
+            
+            tubes.forEach((tube, index) => {
+                const tubeDiv = document.createElement('div');
+                tubeDiv.className = 'tube';
+                tubeDiv.onclick = () => selectTube(index);
+                
+                if (selectedTube === index) {
+                    tubeDiv.classList.add('selected');
+                }
+                
+                tube.forEach(color => {
+                    const ball = document.createElement('div');
+                    ball.className = 'ball';
+                    ball.style.backgroundColor = color;
+                    tubeDiv.appendChild(ball);
+                });
+                
+                container.appendChild(tubeDiv);
+            });
+        }
+
+        function selectTube(index) {
+            if (gameState !== 'playing') return;
+            
+            if (selectedTube === null) {
+                // First selection
+                if (tubes[index].length > 0) {
+                    selectedTube = index;
+                    renderTubes();
+                }
+            } else if (selectedTube === index) {
+                // Deselect
+                selectedTube = null;
+                renderTubes();
+            } else {
+                // Second selection - try to move ball
+                if (canMoveBall(selectedTube, index)) {
+                    moveBall(selectedTube, index);
+                    selectedTube = null;
+                    renderTubes();
+                    checkWin();
+                } else {
+                    // Invalid move, deselect
+                    selectedTube = null;
+                    renderTubes();
+                }
+            }
+        }
+
+        function canMoveBall(fromIndex, toIndex) {
+            const fromTube = tubes[fromIndex];
+            const toTube = tubes[toIndex];
+            
+            // Can't move from empty tube
+            if (fromTube.length === 0) return false;
+            
+            // Can't move to same tube
+            if (fromIndex === toIndex) return false;
+            
+            // Can't move to full tube
+            if (toTube.length >= BALLS_PER_TUBE) return false;
+            
+            // Get the color of the top ball from source tube
+            const fromColor = fromTube[fromTube.length - 1];
+            
+            // Don't allow moving from a completed tube (all same color and full)
+            if (fromTube.length === BALLS_PER_TUBE) {
+                const isComplete = fromTube.every(ball => ball === fromColor);
+                if (isComplete) return false;
+            }
+            
+            // Can move to empty tube
+            if (toTube.length === 0) return true;
+            
+            // Get the color of the top ball in destination tube
+            const toColor = toTube[toTube.length - 1];
+            
+            // Can only move if colors match
+            return fromColor === toColor;
+        }
+
+        function moveBall(fromIndex, toIndex) {
+            // Save state for undo
+            moveHistory.push(JSON.parse(JSON.stringify(tubes)));
+            
+            const ball = tubes[fromIndex].pop();
+            tubes[toIndex].push(ball);
+            
+            moves++;
+            updateUI();
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+            
+            tubes = moveHistory.pop();
+            moves = Math.max(0, moves - 1);
+            selectedTube = null;
+            updateUI();
+            renderTubes();
+        }
+
+        function restartLevel() {
+            selectedTube = null;
+            initLevel();
+        }
+
+        function restartGame() {
+            level = 1;
+            gameState = 'playing';
+            document.getElementById('winScreen').style.display = 'none';
+            initLevel();
+        }
+
+        function nextLevel() {
+            level++;
+            gameState = 'playing';
+            document.getElementById('winScreen').style.display = 'none';
+            initLevel();
+        }
+
+        function showHint() {
+            // Find a valid move
+            for (let i = 0; i < tubes.length; i++) {
+                for (let j = 0; j < tubes.length; j++) {
+                    if (i !== j && canMoveBall(i, j)) {
+                        // Highlight tubes briefly
+                        const container = document.getElementById('tubesContainer');
+                        const tubeElements = container.children;
+                        
+                        tubeElements[i].style.borderColor = '#00ff00';
+                        tubeElements[j].style.borderColor = '#FFA500';
+                        
+                        setTimeout(() => {
+                            renderTubes();
+                        }, 1500);
+                        
+                        return;
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            // Check if all tubes are either empty or completely filled with same color
+            const isWon = tubes.every(tube => {
+                if (tube.length === 0) return true;
+                if (tube.length !== BALLS_PER_TUBE) return false;
+                
+                const firstColor = tube[0];
+                return tube.every(ball => ball === firstColor);
+            });
+            
+            if (isWon) {
+                gameState = 'win';
+                document.getElementById('finalMoves').textContent = moves;
+                setTimeout(() => {
+                    document.getElementById('winScreen').style.display = 'block';
+                }, 500);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('level').textContent = level;
+            document.getElementById('moves').textContent = moves;
+        }
+
+        // Initialize
+        const container = document.getElementById('tubesContainer');
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.5); font-size: 20px; margin: 50px;">Click START GAME to begin!</p>';
+    </script>
+</body>
+</html>
