@@ -251,6 +251,24 @@
       "url": "./games/flight-simulator.html",
       "tags": ["action", "arcade"],
       "platforms": ["desktop"]
+    },
+    {
+      "id": "pac-man",
+      "name": "Pac-Man Clone",
+      "description": "Eat all pellets, avoid ghosts, grab power-ups! Classic arcade maze action!",
+      "image": "./images/hero-images/pac-man.svg",
+      "url": "./games/pac-man.html",
+      "tags": ["arcade", "classic", "action"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "ball-sort-puzzle",
+      "name": "Ball Sort Puzzle",
+      "description": "Sort colored balls into tubes - a satisfying logic puzzle!",
+      "image": "./images/hero-images/ball-sort-puzzle.svg",
+      "url": "./games/ball-sort-puzzle.html",
+      "tags": ["puzzle", "casual", "logic"],
+      "platforms": ["desktop", "mobile"]
     }
   ]
 }
