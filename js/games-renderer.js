@@ -65,7 +65,7 @@ const GameRenderer = {
   // Render all games
   async renderGames(containerId = 'gamesContainer') {
     try {
-      const response = await fetch('/data/games-data.json');
+      const response = await fetch('./data/games-data.json');
       const data = await response.json();
       
       const container = document.getElementById(containerId);
