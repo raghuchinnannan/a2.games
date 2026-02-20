@@ -5,638 +5,1214 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D Flight Simulator</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; font-family: Arial, sans-serif; }
+
+    #hud {
+      position: absolute; top: 20px; left: 20px;
+      color: white; font-size: 18px; font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+      z-index: 10; display: none; line-height: 1.85;
     }
-    
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
+    #highScoreDisplay {
+      position: absolute; top: 20px; right: 160px;
+      color: white; font-size: 18px; font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9); z-index: 10;
     }
-    
-    #score {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      color: white;
-      font-size: 24px;
-      font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-      z-index: 10;
+    .zen-badge {
+      background: #00bcd4; color: white;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 12px; vertical-align: middle;
+      margin-left: 6px; letter-spacing: 1px;
+      font-style: normal;
     }
-    
-    #gameOver {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+    #comboPopup {
+      position: absolute; top: 38%; left: 50%;
+      transform: translateX(-50%);
+      font-size: 30px; font-weight: bold;
+      text-shadow: 0 0 20px currentColor;
+      opacity: 0; transition: opacity 0.35s ease;
+      pointer-events: none; z-index: 50;
+      letter-spacing: 2px;
+    }
+
+    .overlay {
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      color: white;
-      font-size: 48px;
-      font-weight: bold;
-      text-align: center;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-      display: none;
-      z-index: 100;
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 40px;
-      border-radius: 15px;
+      color: white; text-align: center;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      z-index: 100; background: rgba(0,0,0,0.78);
+      padding: 40px; border-radius: 15px; max-width: 92%;
     }
-    
-    #startScreen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 32px;
-      font-weight: bold;
-      text-align: center;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-      z-index: 100;
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 40px;
-      border-radius: 15px;
-      max-width: 90%;
-    }
-    
-    #startScreen h1 {
-      margin-bottom: 20px;
-      font-size: 48px;
-      color: #4CAF50;
-    }
-    
-    #startScreen p {
+    #startScreen h1 { margin-bottom: 16px; font-size: 46px; color: #4CAF50; }
+    #startScreen p  { font-size: 17px; margin: 8px 0; line-height: 1.6; }
+    #gameOver    { display: none; }
+    #pauseScreen { display: none; font-size: 34px; font-weight: bold; }
+    #settingsScreen { display: none; min-width: 340px; }
+
+    .go-title { font-size: 44px; font-weight: bold; margin-bottom: 20px; }
+    .go-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px 24px; text-align: left; margin: 0 0 20px;
       font-size: 18px;
-      margin: 10px 0;
-      line-height: 1.6;
     }
-    
+    .go-grid .label { opacity: 0.75; }
+    .go-grid .value { font-weight: bold; color: #7ecfff; text-align: right; }
+    .go-grid .value.gold { color: #ffd700; }
+
     .button {
-      padding: 15px 30px;
-      font-size: 24px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 20px;
-      transition: background-color 0.3s;
+      padding: 14px 28px; font-size: 22px;
+      background: #4CAF50; color: white;
+      border: none; border-radius: 5px; cursor: pointer;
+      margin-top: 16px; transition: background 0.3s;
     }
-    
-    .button:hover {
-      background-color: #45a049;
+    .button:hover  { background: #45a049; }
+    .button:active { transform: scale(0.95); }
+    .button.zen-btn { background: #0097a7; }
+    .button.zen-btn:hover { background: #007c8c; }
+
+    .btn-ghost {
+      padding: 10px 22px; font-size: 17px;
+      background: rgba(255,255,255,0.12);
+      color: white; border: 2px solid rgba(255,255,255,0.35);
+      border-radius: 6px; cursor: pointer;
+      margin-top: 12px; transition: background 0.2s;
+      display: inline-flex; align-items: center; gap: 7px;
     }
-    
-    .button:active {
-      transform: scale(0.95);
-    }
-    
-    #instructions {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      color: white;
-      font-size: 18px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-      z-index: 10;
-    }
-    
+    .btn-ghost:hover  { background: rgba(255,255,255,0.22); }
+    .btn-ghost:active { transform: scale(0.96); }
+
     #backButton {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #f44336;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      z-index: 10;
-      text-decoration: none;
-      display: inline-block;
+      position: absolute; top: 20px; right: 20px;
+      padding: 10px 20px; font-size: 16px;
+      background: #f44336; color: white;
+      border: none; border-radius: 5px; cursor: pointer;
+      z-index: 10; text-decoration: none; display: inline-block;
     }
-    
-    #backButton:hover {
-      background-color: #da190b;
+    #backButton:hover { background: #da190b; }
+
+    #instructions {
+      position: absolute; bottom: 20px; left: 20px;
+      color: white; font-size: 15px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      z-index: 10; display: none;
     }
-    
+
+    #settingsScreen h2 { font-size: 24px; margin-bottom: 18px; }
+    .settings-section {
+      text-align: left; margin: 4px 0 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+    }
+    .settings-section:last-of-type { border-bottom: none; }
+    .settings-section h3 {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1.2px; opacity: 0.55; margin-bottom: 10px;
+    }
+    .setting-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 20px;
+      font-size: 16px; margin: 10px 0;
+    }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle-track {
+      width: 50px; height: 26px; background: #555;
+      border-radius: 13px; position: relative;
+      transition: background 0.22s; flex-shrink: 0;
+    }
+    .toggle-track.on { background: #4CAF50; }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: white; border-radius: 50%;
+      transition: left 0.22s;
+    }
+    .toggle-track.on .toggle-thumb { left: 27px; }
+    .toggle-label { font-size: 13px; opacity: 0.75; min-width: 28px; }
+    .speed-control {
+      display: flex; align-items: center;
+      justify-content: center; gap: 16px; margin: 8px 0;
+    }
+    .speed-btn {
+      width: 38px; height: 38px; background: #555;
+      border: none; border-radius: 7px;
+      color: white; font-size: 22px; cursor: pointer; line-height: 1;
+    }
+    .speed-btn:hover  { background: #777; }
+    .speed-btn:active { transform: scale(0.93); }
+    .speed-val  { font-size: 22px; font-weight: bold; min-width: 54px; text-align: center; }
+    .speed-hint { font-size: 12px; opacity: 0.55; margin-top: 4px; }
+
+    .seg-control {
+      display: flex; gap: 4px;
+      background: rgba(0,0,0,0.35);
+      padding: 4px; border-radius: 8px; margin: 8px 0;
+    }
+    .seg-btn {
+      flex: 1; padding: 9px 6px;
+      background: transparent; border: none;
+      color: rgba(255,255,255,0.5);
+      border-radius: 5px; cursor: pointer;
+      font-size: 14px; font-weight: bold;
+      transition: all 0.18s; white-space: nowrap;
+    }
+    .seg-btn.active { background: #4CAF50; color: white; }
+    .seg-btn:hover:not(.active) { background: rgba(255,255,255,0.12); color: white; }
+
+    #touchControls {
+      position: absolute; bottom: 30px; right: 30px;
+      display: none; z-index: 20; user-select: none;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 64px);
+      gap: 4px;
+    }
+    .dpad-btn {
+      width: 64px; height: 64px;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.55);
+      border-radius: 12px; font-size: 28px; color: white;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dpad-btn:active { background: rgba(255,255,255,0.5); }
+    .dpad-empty { background: none !important; border: none !important; pointer-events: none; }
+
     @media (max-width: 768px) {
-      #startScreen h1 {
-        font-size: 32px;
-      }
-      
-      #startScreen {
-        font-size: 20px;
-        padding: 30px 20px;
-      }
-      
-      #startScreen p {
-        font-size: 16px;
-      }
-      
-      #gameOver {
-        font-size: 32px;
-        padding: 30px 20px;
-      }
-      
-      .button {
-        font-size: 20px;
-        padding: 12px 24px;
-      }
-      
-      #score {
-        font-size: 20px;
-      }
-      
-      #instructions {
-        font-size: 14px;
-      }
+      #startScreen h1 { font-size: 30px; }
+      #startScreen    { padding: 28px 18px; }
+      #startScreen p  { font-size: 14px; }
+      .go-title       { font-size: 32px; }
+      .button         { font-size: 18px; padding: 12px 22px; }
+      #hud            { font-size: 14px; }
+      #highScoreDisplay { right: 20px; top: 66px; font-size: 14px; }
+      #settingsScreen   { min-width: unset; width: 88vw; }
     }
   </style>
 </head>
 <body>
-  <a href="../index.html" id="backButton">← Back to Home</a>
-  
-  <div id="score" style="display: none;">Score: 0</div>
-  
-  <div id="startScreen">
-    <h1>✈️ 3D Flight Simulator</h1>
-    <p><strong>How to Play:</strong></p>
-    <p>🎮 Use <strong>Arrow Keys</strong> to control your plane</p>
-    <p>⬆️ Up - Fly Higher</p>
-    <p>⬇️ Down - Fly Lower</p>
-    <p>⬅️ Left - Move Left</p>
-    <p>➡️ Right - Move Right</p>
-    <p><br>🎯 Avoid the red obstacles!</p>
-    <p>📊 Score increases as you pass obstacles</p>
-    <p>🚀 Speed increases every 5 points</p>
-    <button class="button" id="startButton">Start Game</button>
+  <a href="../index.html" id="backButton">← Back</a>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="accuracyDisplay">Accuracy: —</div>
+    <div id="distDisplay">Dist: 0 m</div>
+    <div id="flightDisplay">Alt: 500 m | 0.3×</div>
+    <div id="liveDisplay">❤️❤️❤️</div>
   </div>
-  
-  <div id="gameOver">
-    Game Over!<br>
-    <span style="font-size: 24px; display: block; margin: 10px 0;">Final Score: <span id="finalScore">0</span></span>
+  <div id="highScoreDisplay">Best: 0</div>
+
+  <!-- Combo popup -->
+  <div id="comboPopup"></div>
+
+  <!-- Start screen -->
+  <div id="startScreen" class="overlay">
+    <h1>✈️ 3D Flight Simulator</h1>
+    <p><strong>Fly through the rings to score!</strong></p>
+    <p>⬆️⬇️⬅️➡️ &nbsp;Arrow keys (or D-pad on mobile)</p>
+    <p>💥 Hit the ring frame = lose a life &nbsp;|&nbsp; 🟠 Going around = no score</p>
+    <p>🔥 Chain rings for ×2 / ×3 / ×4 combo &nbsp;|&nbsp; 🚀 Speed up every 5 rings</p>
+    <p>🔵 Blue rings move — watch out!</p>
+    <button class="button" id="startButton">▶ Start Game</button><br>
+    <button class="button zen-btn" id="zenButton">🧘 Zen Mode</button><br>
+    <button class="btn-ghost" id="settingsBtnStart">⚙️ Settings</button>
+  </div>
+
+  <!-- Game over -->
+  <div id="gameOver" class="overlay">
+    <div class="go-title">Game Over!</div>
+    <div class="go-grid">
+      <span class="label">Score</span>
+      <span class="value" id="finalScore">0</span>
+      <span class="label">Rings flown</span>
+      <span class="value" id="finalRings">0 / 0</span>
+      <span class="label">Accuracy</span>
+      <span class="value" id="finalAccuracy">—</span>
+      <span class="label">Best combo</span>
+      <span class="value" id="finalCombo">0</span>
+      <span class="label">Distance</span>
+      <span class="value" id="finalDist">0 m</span>
+      <span class="label">Best score</span>
+      <span class="value gold" id="finalBest">0</span>
+    </div>
     <button class="button" id="restartButton">Restart</button>
   </div>
-  
-  <div id="instructions" style="display: none;">Use arrow keys: ← → ↑ ↓</div>
+
+  <!-- Pause -->
+  <div id="pauseScreen" class="overlay">
+    ⏸️ Paused
+    <span style="font-size:20px; display:block; margin:12px 0;">
+      Press <strong>Esc</strong> to resume
+    </span>
+    <button class="btn-ghost" id="settingsBtnPause">⚙️ Settings</button><br>
+    <button class="btn-ghost" id="exitToMenuBtn" style="margin-top:8px;">🏠 Exit to Menu</button>
+  </div>
+
+  <!-- Settings -->
+  <div id="settingsScreen" class="overlay">
+    <h2>⚙️ Settings</h2>
+    <div class="settings-section">
+      <h3>Controls</h3>
+      <div class="setting-row">
+        <span>Invert Left / Right</span>
+        <div class="toggle-wrap" id="toggleX">
+          <div class="toggle-track" id="trackX"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label" id="labelX">OFF</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span>Invert Up / Down</span>
+        <div class="toggle-wrap" id="toggleY">
+          <div class="toggle-track" id="trackY"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label" id="labelY">OFF</span>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Starting Speed</h3>
+      <div class="speed-control">
+        <button class="speed-btn" id="speedDown">−</button>
+        <span class="speed-val" id="startSpeedVal">0.3×</span>
+        <button class="speed-btn" id="speedUp">+</button>
+      </div>
+      <div class="speed-hint">Range: 0.3× – 1.5× &nbsp;|&nbsp; increases as you score</div>
+    </div>
+    <div class="settings-section">
+      <h3>Ring Size</h3>
+      <div class="seg-control" id="ringSizeCtrl">
+        <button class="seg-btn" data-val="small">🔴 Small</button>
+        <button class="seg-btn" data-val="medium">🟠 Medium</button>
+        <button class="seg-btn" data-val="large">🟢 Large</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Ring Spacing</h3>
+      <div class="seg-control" id="ringSpacingCtrl">
+        <button class="seg-btn" data-val="close">⚡ Close</button>
+        <button class="seg-btn" data-val="normal">✈️ Normal</button>
+        <button class="seg-btn" data-val="far">🌄 Far</button>
+      </div>
+      <div class="speed-hint">Ring changes take effect on next game</div>
+    </div>
+    <button class="button" id="closeSettings">Done</button>
+  </div>
+
+  <div id="instructions">Fly through rings · Chain for combo · Esc = pause</div>
+
+  <!-- Mobile D-pad -->
+  <div id="touchControls">
+    <div class="dpad">
+      <div class="dpad-btn dpad-empty"></div>
+      <div class="dpad-btn" id="btnUp">↑</div>
+      <div class="dpad-btn dpad-empty"></div>
+      <div class="dpad-btn" id="btnLeft">←</div>
+      <div class="dpad-btn dpad-empty"></div>
+      <div class="dpad-btn" id="btnRight">→</div>
+      <div class="dpad-btn dpad-empty"></div>
+      <div class="dpad-btn" id="btnDown">↓</div>
+      <div class="dpad-btn dpad-empty"></div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // Game variables
+    // ── Preferences ────────────────────────────────────────────────────────────
+    let invertX    = (localStorage.getItem('flightInvertX')  ?? 'true')  === 'true';
+    let invertY    = (localStorage.getItem('flightInvertY')  ?? 'false') === 'true';
+    let startSpeed = Math.min(1.5, Math.max(0.3,
+      parseFloat(localStorage.getItem('flightStartSpeed') || '0.3')));
+    let ringSize    = localStorage.getItem('flightRingSize')    || 'large';
+    let ringSpacing = localStorage.getItem('flightRingSpacing') || 'far';
+
+    // ── Constants ──────────────────────────────────────────────────────────────
+    const MAX_LIVES         = 3;
+    const INVINCIBLE_FRAMES = 120;   // ~2 s at 60 fps
+    const TRAIL_LEN         = 28;    // contrail history length
+
+    // ── Game state ─────────────────────────────────────────────────────────────
     let scene, camera, renderer;
-    let plane, obstacles = [];
-    let skyBox, clouds = [], birds = [];
-    let score = 0;
-    let speed = 0.5;
-    let gameActive = false;
-    let gameStarted = false;
-    
-    // Initialize the game
+    let plane, skyBox, ground;
+    let obstacles = [], clouds = [], birds = [];
+    const mountains = [], treeGroups = [], cityBlocks = [];
+
+    let score            = 0;
+    let ringsScored      = 0;   // rings actually flown through (for accuracy / speed-up)
+    let speed            = startSpeed;
+    let distanceTraveled = 0;
+    let totalRings       = 0;
+    let highScore        = parseInt(localStorage.getItem('flightSimHighScore') || '0');
+    let gameState        = 'menu';
+    let settingsReturnTo = null;
+
+    // Combo multiplier
+    let combo    = 0;
+    let comboMax = 0;
+
+    // Lives / invincibility
+    let lives            = MAX_LIVES;
+    let invincible       = false;
+    let invincibleFrames = 0;
+
+    // Zen mode
+    let zenMode = false;
+
+    // Screen shake
+    let shakeFrames    = 0;
+    let shakeIntensity = 0;
+
+    // Audio
+    let audioCtx   = null;
+    let engineOsc  = null;
+    let engineGain = null;
+
+    // Contrails
+    let leftTrailPts  = [];
+    let rightTrailPts = [];
+    let leftTrailLine  = null;
+    let rightTrailLine = null;
+
+    const keysDown  = {};
+    let targetBankZ = 0, targetBankX = 0;
+
+    // ── Ring configuration ─────────────────────────────────────────────────────
+    const RING_SIZE = {
+      small:  { minR: 1.8, varR: 1.2 },
+      medium: { minR: 2.8, varR: 2.0 },
+      large:  { minR: 4.5, varR: 2.5 },
+    };
+    const RING_SPACING = {
+      close:  { base: 14, var: 6  },
+      normal: { base: 24, var: 10 },
+      far:    { base: 42, var: 18 },
+    };
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function formatDist(d) {
+      const m = Math.round(d * 10);
+      return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : m + ' m';
+    }
+    function getAccuracy() {
+      return totalRings > 0 ? Math.round(ringsScored / totalRings * 100) + '%' : '—';
+    }
+    function getLivesHtml() {
+      if (zenMode) return '<span class="zen-badge">ZEN</span> ∞';
+      let h = '';
+      for (let i = 0; i < MAX_LIVES; i++) h += (i < lives ? '❤️' : '🖤');
+      return h;
+    }
+
+    // ── Audio ──────────────────────────────────────────────────────────────────
+    function initAudio() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch(e) {}
+    }
+    function startEngineSound() {
+      if (!audioCtx || engineOsc) return;
+      engineOsc  = audioCtx.createOscillator();
+      engineGain = audioCtx.createGain();
+      engineOsc.type = 'sawtooth';
+      engineOsc.frequency.value = 55 + speed * 35;
+      engineGain.gain.value = 0.05;
+      engineOsc.connect(engineGain);
+      engineGain.connect(audioCtx.destination);
+      engineOsc.start();
+    }
+    function updateEngineSound() {
+      if (engineOsc) engineOsc.frequency.value = 55 + speed * 35;
+    }
+    function stopEngineSound() {
+      if (!engineOsc) return;
+      try { engineOsc.stop(); } catch(e) {}
+      engineOsc.disconnect();
+      engineGain.disconnect();
+      engineOsc = null;
+      engineGain = null;
+    }
+    function _tone(freq, type, vol, dur, freqEnd) {
+      if (!audioCtx) return;
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + dur);
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    }
+    function playRingSound(comboLevel) {
+      _tone(440 + (Math.min(comboLevel, 4) - 1) * 110, 'sine', 0.15, 0.25);
+    }
+    function playMissSound() {
+      _tone(300, 'sine', 0.07, 0.3, 150);
+    }
+    function playHitSound() {
+      _tone(220, 'square', 0.2, 0.5, 60);
+    }
+    function playGameOverSound() {
+      if (!audioCtx) return;
+      [440, 370, 311, 261].forEach((freq, i) => {
+        const t = audioCtx.currentTime + i * 0.2;
+        const osc  = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      });
+    }
+
+    // ── Screen shake ───────────────────────────────────────────────────────────
+    function triggerShake(frames, intensity) {
+      shakeFrames    = frames;
+      shakeIntensity = intensity;
+    }
+
+    // ── Combo popup ────────────────────────────────────────────────────────────
+    function showComboPopup(n, lost) {
+      const el = document.getElementById('comboPopup');
+      clearTimeout(el._t);
+      if (lost) {
+        el.textContent = 'COMBO LOST';
+        el.style.color = '#ff8800';
+      } else if (n >= 4) {
+        el.textContent = '×4 MAX COMBO!';
+        el.style.color = '#ffd700';
+      } else {
+        el.textContent = '×' + n + ' COMBO!';
+        el.style.color = '#00ff88';
+      }
+      el.style.opacity = '1';
+      el._t = setTimeout(() => { el.style.opacity = '0'; }, lost ? 900 : 1300);
+    }
+
+    // ── Lives ──────────────────────────────────────────────────────────────────
+    function loseLife() {
+      if (invincible || zenMode) return;
+      lives--;
+      refreshHUD();
+      playHitSound();
+      triggerShake(16, 0.65);
+      if (lives <= 0) { endGame(); return; }
+      invincible       = true;
+      invincibleFrames = INVINCIBLE_FRAMES;
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────────
     function init() {
-      // Create scene
       scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x87CEEB, 0.0005);
-      
-      // Create camera
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      scene.fog = new THREE.FogExp2(0x87CEEB, 0.0035);
+
+      camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 800);
       camera.position.set(0, 2, -5);
       camera.lookAt(0, 0, 10);
-      
-      // Create renderer
+
       renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setClearColor(0x87CEEB);
       document.body.appendChild(renderer.domElement);
-      
-      // Add lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
-      
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-      directionalLight.position.set(1, 1, 1);
-      scene.add(directionalLight);
-      
-      // Create skybox
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      const sun = new THREE.DirectionalLight(0xfff4e0, 1.2);
+      sun.position.set(80, 300, 60);
+      scene.add(sun);
+      scene.add(new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.4));
+
       createSkyBox();
-      
-      // Create plane
+      createGround();
       createPlane();
-      
-      // Initialize obstacles, clouds, and birds
-      for (let i = 0; i < 10; i++) {
-        createObstacle(50 + i * 20);
-      }
-      
-      for (let i = 0; i < 20; i++) {
-        createCloud();
-        if (i % 5 === 0) {
-          createBird();
-        }
-      }
-      
-      // Handle window resize
+      createContrails();
+
+      spawnRings();
+      for (let i = 0; i < 20; i++) { createCloud(); if (i % 5 === 0) createBird(); }
+
+      for (let i = 0; i < 16; i++) createMountain();
+      for (let i = 0; i < 14; i++) createTreeCluster();
+      for (let i = 0; i < 5;  i++) createCityBlock();
+
       window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = innerWidth / innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(innerWidth, innerHeight);
       });
-      
-      // Handle keyboard controls
-      document.addEventListener('keydown', handleKeyDown);
-      
-      // Handle start button
-      document.getElementById('startButton').addEventListener('click', startGame);
-      
-      // Handle restart button
-      document.getElementById('restartButton').addEventListener('click', restartGame);
-      
-      // Start animation loop (for background animation)
+
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup',   e => { keysDown[e.key] = false; });
+
+      document.getElementById('startButton')     .addEventListener('click', startGame);
+      document.getElementById('zenButton')       .addEventListener('click', startZenGame);
+      document.getElementById('restartButton')   .addEventListener('click', restartGame);
+      document.getElementById('settingsBtnStart').addEventListener('click', () => openSettings('start'));
+      document.getElementById('settingsBtnPause').addEventListener('click', () => openSettings('pause'));
+      document.getElementById('closeSettings')   .addEventListener('click', closeSettings);
+      document.getElementById('exitToMenuBtn')   .addEventListener('click', exitToMenu);
+      document.getElementById('toggleX').addEventListener('click', () => setInvertX(!invertX));
+      document.getElementById('toggleY').addEventListener('click', () => setInvertY(!invertY));
+      document.getElementById('speedDown').addEventListener('click', () => adjustStartSpeed(-0.1));
+      document.getElementById('speedUp')  .addEventListener('click', () => adjustStartSpeed( 0.1));
+
+      setupTouchControls();
+
+      applyToggleUI('trackX', 'labelX', invertX);
+      applyToggleUI('trackY', 'labelY', invertY);
+      updateStartSpeedUI();
+      setupSegControl('ringSizeCtrl',    ringSize,    v => { ringSize    = v; localStorage.setItem('flightRingSize',    v); });
+      setupSegControl('ringSpacingCtrl', ringSpacing, v => { ringSpacing = v; localStorage.setItem('flightRingSpacing', v); });
+      document.getElementById('highScoreDisplay').textContent = 'Best: ' + highScore;
+
       animate();
     }
-    
-    // Start the game
-    function startGame() {
-      document.getElementById('startScreen').style.display = 'none';
-      document.getElementById('score').style.display = 'block';
-      document.getElementById('instructions').style.display = 'block';
-      
-      gameActive = true;
-      gameStarted = true;
-      score = 0;
-      speed = 0.5;
-      
-      document.getElementById('score').textContent = 'Score: 0';
+
+    // ── Settings ───────────────────────────────────────────────────────────────
+    function openSettings(from) {
+      settingsReturnTo = from;
+      document.getElementById(from === 'start' ? 'startScreen' : 'pauseScreen').style.display = 'none';
+      document.getElementById('settingsScreen').style.display = 'block';
     }
-    
-    // Create skybox
-    function createSkyBox() {
-      const skyGeometry = new THREE.BoxGeometry(1000, 1000, 1000);
-      const skyMaterials = [
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
-        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide })
-      ];
-      
-      skyBox = new THREE.Mesh(skyGeometry, skyMaterials);
-      scene.add(skyBox);
+    function closeSettings() {
+      document.getElementById('settingsScreen').style.display = 'none';
+      if (settingsReturnTo === 'start') document.getElementById('startScreen').style.display = 'block';
+      if (settingsReturnTo === 'pause') document.getElementById('pauseScreen').style.display = 'block';
+      settingsReturnTo = null;
     }
-    
-    // Create plane
-    function createPlane() {
-      // Main body
-      const bodyGeometry = new THREE.ConeGeometry(0.5, 2, 8);
-      const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x3366ff });
-      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-      body.rotation.x = -Math.PI / 2;
-      
-      // Wings
-      const wingGeometry = new THREE.BoxGeometry(3, 0.1, 0.7);
-      const wingMaterial = new THREE.MeshPhongMaterial({ color: 0x3366ff });
-      const wings = new THREE.Mesh(wingGeometry, wingMaterial);
-      wings.position.set(0, 0, 0);
-      
-      // Tail
-      const tailGeometry = new THREE.BoxGeometry(1, 0.1, 0.5);
-      const tailMaterial = new THREE.MeshPhongMaterial({ color: 0x3366ff });
-      const tail = new THREE.Mesh(tailGeometry, tailMaterial);
-      tail.position.set(0, 0, -0.8);
-      
-      // Create plane group
-      plane = new THREE.Group();
-      plane.add(body);
-      plane.add(wings);
-      plane.add(tail);
-      
-      plane.position.set(0, 0, 0);
-      scene.add(plane);
+    function setInvertX(v) { invertX = v; localStorage.setItem('flightInvertX', v); applyToggleUI('trackX','labelX',v); }
+    function setInvertY(v) { invertY = v; localStorage.setItem('flightInvertY', v); applyToggleUI('trackY','labelY',v); }
+    function applyToggleUI(tid, lid, on) {
+      document.getElementById(tid).classList.toggle('on', on);
+      document.getElementById(lid).textContent = on ? 'ON' : 'OFF';
     }
-    
-    // Create obstacle
-    function createObstacle(zPosition) {
-      const size = 1 + Math.random() * 2;
-      const geometry = new THREE.BoxGeometry(size, size, size);
-      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      const obstacle = new THREE.Mesh(geometry, material);
-      
-      // Position randomly but in the path
-      obstacle.position.set(
-        Math.random() * 20 - 10, // x: -10 to 10
-        Math.random() * 10 - 5,  // y: -5 to 5
-        zPosition
-      );
-      
-      scene.add(obstacle);
-      obstacles.push(obstacle);
-      
-      return obstacle;
+    function adjustStartSpeed(d) {
+      startSpeed = Math.round((startSpeed + d) * 10) / 10;
+      startSpeed = Math.min(1.5, Math.max(0.3, startSpeed));
+      localStorage.setItem('flightStartSpeed', startSpeed);
+      updateStartSpeedUI();
     }
-    
-    // Create cloud
-    function createCloud() {
-      const cloudGroup = new THREE.Group();
-      
-      // Create multiple spheres to form a cloud
-      const cloudMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
-      
-      for (let i = 0; i < 5; i++) {
-        const size = 1 + Math.random();
-        const cloudGeometry = new THREE.SphereGeometry(size, 8, 8);
-        const cloudPart = new THREE.Mesh(cloudGeometry, cloudMaterial);
-        
-        cloudPart.position.set(
-          Math.random() * 2 - 1,
-          Math.random() * 1 - 0.5,
-          Math.random() * 2 - 1
-        );
-        
-        cloudGroup.add(cloudPart);
+    function updateStartSpeedUI() {
+      document.getElementById('startSpeedVal').textContent = startSpeed.toFixed(1) + '×';
+    }
+    function setupSegControl(ctrlId, currentVal, onChange) {
+      const ctrl = document.getElementById(ctrlId);
+      ctrl.querySelectorAll('.seg-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.val === currentVal);
+        btn.addEventListener('click', () => {
+          ctrl.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          onChange(btn.dataset.val);
+        });
+      });
+    }
+
+    // ── Input ──────────────────────────────────────────────────────────────────
+    function onKeyDown(e) {
+      keysDown[e.key] = true;
+      if (e.key === 'Escape') {
+        if (gameState === 'playing') pauseGame();
+        else if (gameState === 'paused') resumeGame();
       }
-      
-      // Position the cloud
-      cloudGroup.position.set(
-        Math.random() * 100 - 50, // x: -50 to 50
-        Math.random() * 20 - 5,   // y: -5 to 15
-        Math.random() * 200 - 50  // z: -50 to 150
-      );
-      
-      // Scale the cloud
-      const scale = 1 + Math.random() * 2;
-      cloudGroup.scale.set(scale, scale * 0.6, scale);
-      
-      scene.add(cloudGroup);
-      clouds.push(cloudGroup);
-      
-      return cloudGroup;
     }
-    
-    // Create bird
-    function createBird() {
-      const birdGroup = new THREE.Group();
-      
-      // Body
-      const bodyGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-      const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
-      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-      birdGroup.add(body);
-      
-      // Wings
-      const wingGeometry = new THREE.BoxGeometry(1, 0.05, 0.3);
-      const wingMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
-      const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
-      leftWing.position.set(-0.5, 0, 0);
-      birdGroup.add(leftWing);
-      
-      const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
-      rightWing.position.set(0.5, 0, 0);
-      birdGroup.add(rightWing);
-      
-      // Position the bird
-      birdGroup.position.set(
-        Math.random() * 60 - 30, // x: -30 to 30
-        Math.random() * 20 - 5,  // y: -5 to 15
-        Math.random() * 200      // z: 0 to 200
-      );
-      
-      // Add animation data
-      birdGroup.userData = {
-        wingDirection: Math.random() < 0.5 ? 1 : -1,
-        wingSpeed: 0.05 + Math.random() * 0.05,
-        moveSpeed: {
-          x: (Math.random() - 0.5) * 0.2,
-          y: (Math.random() - 0.5) * 0.1
-        }
-      };
-      
-      scene.add(birdGroup);
-      birds.push(birdGroup);
-      
-      return birdGroup;
+    function setupTouchControls() {
+      [['btnUp','ArrowUp'],['btnDown','ArrowDown'],['btnLeft','ArrowLeft'],['btnRight','ArrowRight']]
+        .forEach(([id, key]) => {
+          const btn = document.getElementById(id);
+          const on  = e => { e.preventDefault(); keysDown[key] = true;  };
+          const off = e => { e.preventDefault(); keysDown[key] = false; };
+          btn.addEventListener('touchstart',  on,  { passive: false });
+          btn.addEventListener('touchend',    off, { passive: false });
+          btn.addEventListener('touchcancel', off, { passive: false });
+          btn.addEventListener('mousedown', () => keysDown[key] = true);
+          btn.addEventListener('mouseup',   () => keysDown[key] = false);
+        });
     }
-    
-    // Handle keyboard controls
-    function handleKeyDown(event) {
-      if (!gameActive) return;
-      
-      const moveSpeed = 0.5;
-      
-      switch (event.key) {
-        case 'ArrowRight':
-          plane.position.x -= moveSpeed;
-          plane.rotation.z = 0.2;
-          setTimeout(() => { if (gameActive) plane.rotation.z = 0; }, 200);
-          break;
-        case 'ArrowLeft':
-          plane.position.x += moveSpeed;
-          plane.rotation.z = -0.2;
-          setTimeout(() => { if (gameActive) plane.rotation.z = 0; }, 200);
-          break;
-        case 'ArrowUp':
-          plane.position.y += moveSpeed;
-          plane.rotation.x = 0.2;
-          setTimeout(() => { if (gameActive) plane.rotation.x = 0; }, 200);
-          break;
-        case 'ArrowDown':
-          plane.position.y -= moveSpeed;
-          plane.rotation.x = -0.2;
-          setTimeout(() => { if (gameActive) plane.rotation.x = 0; }, 200);
-          break;
-      }
-      
-      // FIXED: Limit plane movement to keep it visible on screen
-      // More restrictive boundaries to ensure plane stays visible
-      plane.position.x = Math.max(-8, Math.min(8, plane.position.x));
-      plane.position.y = Math.max(-6, Math.min(6, plane.position.y));
+
+    // ── Game flow ──────────────────────────────────────────────────────────────
+    function _resetState() {
+      score = 0; ringsScored = 0; speed = startSpeed;
+      distanceTraveled = 0; totalRings = 0;
+      combo = 0; comboMax = 0;
+      lives = zenMode ? Infinity : MAX_LIVES;
+      invincible = false; invincibleFrames = 0;
+      shakeFrames = 0;
+      plane.visible = true;
+      document.getElementById('comboPopup').style.opacity = '0';
     }
-    
-    // Check collisions
-    function checkCollisions() {
-      const planePosition = plane.position.clone();
-      
-      // Create a simple bounding box for the plane
-      const planeBoundingBox = {
-        minX: planePosition.x - 1.5,
-        maxX: planePosition.x + 1.5,
-        minY: planePosition.y - 0.5,
-        maxY: planePosition.y + 0.5,
-        minZ: planePosition.z - 1,
-        maxZ: planePosition.z + 1
-      };
-      
-      // Check collisions with obstacles
-      for (const obstacle of obstacles) {
-        const obstaclePosition = obstacle.position.clone();
-        const size = obstacle.geometry.parameters.width / 2;
-        
-        const obstacleBoundingBox = {
-          minX: obstaclePosition.x - size,
-          maxX: obstaclePosition.x + size,
-          minY: obstaclePosition.y - size,
-          maxY: obstaclePosition.y + size,
-          minZ: obstaclePosition.z - size,
-          maxZ: obstaclePosition.z + size
-        };
-        
-        if (
-          planeBoundingBox.maxX > obstacleBoundingBox.minX &&
-          planeBoundingBox.minX < obstacleBoundingBox.maxX &&
-          planeBoundingBox.maxY > obstacleBoundingBox.minY &&
-          planeBoundingBox.minY < obstacleBoundingBox.maxY &&
-          planeBoundingBox.maxZ > obstacleBoundingBox.minZ &&
-          planeBoundingBox.minZ < obstacleBoundingBox.maxZ
-        ) {
-          gameOver();
-          return true;
-        }
-      }
-      
-      return false;
+    function _showGameUI() {
+      document.getElementById('startScreen').style.display   = 'none';
+      document.getElementById('hud').style.display           = 'block';
+      document.getElementById('instructions').style.display  = 'block';
+      document.getElementById('touchControls').style.display = 'block';
     }
-    
-    // Game over
-    function gameOver() {
-      gameActive = false;
-      document.getElementById('finalScore').textContent = score;
-      document.getElementById('gameOver').style.display = 'block';
+
+    function startGame()    { zenMode = false; _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); refreshHUD(); }
+    function startZenGame() { zenMode = true;  _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); refreshHUD(); }
+
+    function pauseGame() {
+      gameState = 'paused';
+      document.getElementById('pauseScreen').style.display = 'block';
+      stopEngineSound();
     }
-    
-    // Restart game
-    function restartGame() {
-      // Hide game over screen
-      document.getElementById('gameOver').style.display = 'none';
-      
-      // Reset plane position
+    function resumeGame() {
+      gameState = 'playing';
+      document.getElementById('pauseScreen').style.display = 'none';
+      startEngineSound();
+    }
+    function exitToMenu() {
+      stopEngineSound();
+      gameState = 'menu';
+      zenMode   = false;
+      document.getElementById('pauseScreen').style.display   = 'none';
+      document.getElementById('hud').style.display           = 'none';
+      document.getElementById('instructions').style.display  = 'none';
+      document.getElementById('touchControls').style.display = 'none';
+      document.getElementById('startScreen').style.display   = 'block';
+      document.getElementById('comboPopup').style.opacity    = '0';
       plane.position.set(0, 0, 0);
       plane.rotation.set(0, 0, 0);
+      plane.visible = true;
+      targetBankZ = 0; targetBankX = 0;
       camera.position.set(0, 2, -5);
-      
-      // Reset obstacles
-      obstacles.forEach(obstacle => {
-        obstacle.userData.passed = false;
-      });
-      
-      let obstacleIndex = 0;
-      obstacles.forEach(obstacle => {
-        obstacle.position.z = 50 + obstacleIndex * 20;
-        obstacle.position.x = Math.random() * 20 - 10;
-        obstacle.position.y = Math.random() * 10 - 5;
-        obstacleIndex++;
-      });
-      
-      // Reset clouds
-      clouds.forEach(cloud => {
-        cloud.position.set(
-          Math.random() * 100 - 50,
-          Math.random() * 20 - 5,
-          Math.random() * 200 - 50
-        );
-      });
-      
-      // Reset birds
-      birds.forEach(bird => {
-        bird.position.set(
-          Math.random() * 60 - 30,
-          Math.random() * 20 - 5,
-          Math.random() * 200
-        );
-      });
-      
-      // Reset game state
-      score = 0;
-      speed = 0.5;
-      gameActive = true;
-      
-      document.getElementById('score').textContent = 'Score: 0';
+      obstacles.forEach(o => scene.remove(o));
+      obstacles = [];
+      spawnRings();
+      _resetTrailPts();
     }
-    
-    // Animation loop
+
+    function endGame() {
+      gameState = 'gameover';
+      stopEngineSound();
+      playGameOverSound();
+      triggerShake(22, 0.8);
+      plane.visible = true;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flightSimHighScore', String(highScore));
+        document.getElementById('highScoreDisplay').textContent = 'Best: ' + highScore;
+      }
+      document.getElementById('finalScore')   .textContent = score;
+      document.getElementById('finalRings')   .textContent = ringsScored + ' / ' + totalRings;
+      document.getElementById('finalAccuracy').textContent = getAccuracy();
+      document.getElementById('finalCombo')   .textContent = comboMax + (comboMax >= 4 ? ' 🏆' : comboMax >= 2 ? ' 🔥' : '');
+      document.getElementById('finalDist')    .textContent = formatDist(distanceTraveled);
+      document.getElementById('finalBest')    .textContent = highScore;
+      document.getElementById('gameOver').style.display = 'block';
+    }
+
+    function restartGame() {
+      document.getElementById('gameOver').style.display = 'none';
+      _resetState();
+      plane.position.set(0, 0, 0);
+      plane.rotation.set(0, 0, 0);
+      targetBankZ = 0; targetBankX = 0;
+      camera.position.set(0, 2, -5);
+      obstacles.forEach(o => scene.remove(o));
+      obstacles = [];
+      spawnRings();
+      clouds.forEach(c => c.position.set(Math.random()*100-50, Math.random()*20-5, Math.random()*200-50));
+      birds.forEach(b  => b.position.set(Math.random()*60-30,  Math.random()*20-5, Math.random()*200));
+      _resetTrailPts();
+      gameState = 'playing';
+      initAudio();
+      startEngineSound();
+      refreshHUD();
+    }
+
+    // ── Scene: sky, ground, plane ──────────────────────────────────────────────
+    function createSkyBox() {
+      const geo  = new THREE.BoxGeometry(1000, 1000, 1000);
+      const mats = [
+        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x4a8fd4, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x6aae58, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide }),
+      ];
+      skyBox = new THREE.Mesh(geo, mats);
+      scene.add(skyBox);
+    }
+
+    function createGround() {
+      const geo = new THREE.PlaneGeometry(1000, 1000);
+      const mat = new THREE.MeshLambertMaterial({ color: 0x4a7c59 });
+      ground = new THREE.Mesh(geo, mat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -20;
+      scene.add(ground);
+    }
+
+    function createPlane() {
+      const mat  = new THREE.MeshPhongMaterial({ color: 0x3366ff });
+      const body = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2, 8), mat);
+      body.rotation.x = -Math.PI / 2;
+      const wings = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 0.7), mat);
+      const stab  = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.4), mat);
+      stab.position.set(0, 0, -0.85);
+      const fin   = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, 0.5), mat);
+      fin.position.set(0, 0.3, -0.85);
+      plane = new THREE.Group();
+      plane.add(body, wings, stab, fin);
+      scene.add(plane);
+    }
+
+    // ── Contrails ──────────────────────────────────────────────────────────────
+    function _resetTrailPts() {
+      leftTrailPts  = [];
+      rightTrailPts = [];
+      for (let i = 0; i < TRAIL_LEN; i++) {
+        leftTrailPts.push(new THREE.Vector3());
+        rightTrailPts.push(new THREE.Vector3());
+      }
+    }
+
+    function createContrails() {
+      _resetTrailPts();
+      function makeLine() {
+        const geo  = new THREE.BufferGeometry();
+        const pos  = new Float32Array(TRAIL_LEN * 3);
+        const col  = new Float32Array(TRAIL_LEN * 3);
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+        return new THREE.Line(geo, new THREE.LineBasicMaterial({ vertexColors: true }));
+      }
+      leftTrailLine  = makeLine();
+      rightTrailLine = makeLine();
+      scene.add(leftTrailLine);
+      scene.add(rightTrailLine);
+    }
+
+    function updateContrails() {
+      if (!plane) return;
+      plane.updateMatrixWorld(true);
+      const lw = new THREE.Vector3(-1.5, 0, 0).applyMatrix4(plane.matrixWorld);
+      const rw = new THREE.Vector3( 1.5, 0, 0).applyMatrix4(plane.matrixWorld);
+
+      leftTrailPts.unshift(lw);
+      if (leftTrailPts.length  > TRAIL_LEN) leftTrailPts.length  = TRAIL_LEN;
+      rightTrailPts.unshift(rw);
+      if (rightTrailPts.length > TRAIL_LEN) rightTrailPts.length = TRAIL_LEN;
+
+      _writeTrail(leftTrailLine,  leftTrailPts);
+      _writeTrail(rightTrailLine, rightTrailPts);
+    }
+
+    function _writeTrail(line, pts) {
+      const pa = line.geometry.attributes.position.array;
+      const ca = line.geometry.attributes.color.array;
+      const n  = pts.length;
+      for (let i = 0; i < TRAIL_LEN; i++) {
+        const p = i < n ? pts[i] : pts[n - 1];
+        const t = i / (TRAIL_LEN - 1); // 0 = newest (white), 1 = oldest (sky-blue)
+        pa[i*3]   = p.x; pa[i*3+1] = p.y; pa[i*3+2] = p.z;
+        // Lerp white → sky-blue (0x87CEEB = 135, 206, 235 → /255)
+        ca[i*3]   = THREE.MathUtils.lerp(1, 0.53, t);
+        ca[i*3+1] = THREE.MathUtils.lerp(1, 0.81, t);
+        ca[i*3+2] = THREE.MathUtils.lerp(1, 0.92, t);
+      }
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.attributes.color.needsUpdate    = true;
+    }
+
+    // ── Rings ──────────────────────────────────────────────────────────────────
+    function spawnRings() {
+      let z = 45;
+      const sp = RING_SPACING[ringSpacing];
+      for (let i = 0; i < 10; i++) {
+        createRing(z);
+        z += sp.base + Math.random() * sp.var;
+      }
+    }
+
+    function createRing(zPos) {
+      const cfg    = RING_SIZE[ringSize];
+      const radius = cfg.minR + Math.random() * cfg.varR;
+      const tube   = 0.35;
+      const moving = Math.random() < 0.35;
+      const bx     = Math.random() * 14 - 7;
+      const by     = Math.random() * 8  - 2;
+      const col    = moving ? 0x0099ff : 0xff3300;
+      const emiss  = moving ? 0x002244 : 0x220000;
+      const mat    = new THREE.MeshPhongMaterial({ color: col, emissive: emiss });
+      const ring   = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 36), mat);
+      ring.position.set(bx, by, zPos);
+      ring.userData = {
+        passed: false, radius, tube, moving,
+        baseX: bx, baseY: by,
+        oscAxis:  Math.random() < 0.5 ? 'x' : 'y',
+        oscAmp:   1.5 + Math.random() * 2.5,
+        oscSpeed: 0.4 + Math.random() * 0.8,
+        oscPhase: Math.random() * Math.PI * 2,
+        baseColor: col,
+      };
+      scene.add(ring);
+      obstacles.push(ring);
+    }
+
+    // ── Terrain – mountains ────────────────────────────────────────────────────
+    function createMountain() {
+      const group  = new THREE.Group();
+      const side   = Math.random() < 0.5 ? 1 : -1;
+      const height = 18 + Math.random() * 30;
+      const radius = 10 + Math.random() * 14;
+      const rockMat = new THREE.MeshPhongMaterial({ color: 0x6b6050, flatShading: true });
+      const darkMat = new THREE.MeshPhongMaterial({ color: 0x4a4035, flatShading: true });
+      const snowMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee, flatShading: true });
+      const base = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 7), rockMat);
+      base.position.y = height / 2;
+      base.rotation.y = Math.random() * Math.PI;
+      group.add(base);
+      const dark = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.78, height * 0.55, 7), darkMat);
+      dark.position.y = height * 0.16;
+      dark.rotation.y = Math.random() * Math.PI;
+      group.add(dark);
+      if (height > 28) {
+        const snow = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.26, height * 0.22, 7), snowMat);
+        snow.position.y = height * 0.87;
+        group.add(snow);
+      }
+      group.position.set(side * (26 + Math.random() * 28), -20, Math.random() * 600);
+      group.userData.side = side;
+      scene.add(group);
+      mountains.push(group);
+    }
+
+    // ── Terrain – pine forest clusters ────────────────────────────────────────
+    function createTreeCluster() {
+      const group    = new THREE.Group();
+      const side     = Math.random() < 0.5 ? 1 : -1;
+      const count    = 5 + Math.floor(Math.random() * 5);
+      const trunkMat = new THREE.MeshPhongMaterial({ color: 0x4a2f1a });
+      const hue      = 0.28 + (Math.random() - 0.5) * 0.06;
+      const leavesMat = new THREE.MeshPhongMaterial({
+        color: new THREE.Color().setHSL(hue, 0.65, 0.28), flatShading: true
+      });
+      for (let i = 0; i < count; i++) {
+        const tree = new THREE.Group();
+        const tH   = 3 + Math.random() * 4.5;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.28, 1.8, 5), trunkMat);
+        trunk.position.y = 0.9;
+        tree.add(trunk);
+        for (let l = 0; l < 3; l++) {
+          const lr   = tH * 0.38 * (1 - l * 0.18);
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(lr, tH * 0.44, 6), leavesMat);
+          cone.position.y = 1.8 + l * tH * 0.28;
+          tree.add(cone);
+        }
+        tree.position.set((Math.random() - 0.5) * 10, 0, (Math.random() - 0.5) * 10);
+        tree.scale.setScalar(0.6 + Math.random() * 0.7);
+        group.add(tree);
+      }
+      group.position.set(side * (13 + Math.random() * 9), -20, Math.random() * 500);
+      group.userData.side = side;
+      scene.add(group);
+      treeGroups.push(group);
+    }
+
+    // ── Terrain – city blocks ─────────────────────────────────────────────────
+    const BLDG_COLORS = [
+      0x7a8fa6, 0x6a7a8a, 0x8a9aaa,
+      0xaab0b8, 0xc0bdb5,
+      0x5a7a7a, 0x4a6a70,
+      0xa09080,
+    ];
+    function createCityBlock() {
+      const group = new THREE.Group();
+      const side  = Math.random() < 0.5 ? 1 : -1;
+      const count = 10 + Math.floor(Math.random() * 10);
+      const road  = new THREE.Mesh(
+        new THREE.PlaneGeometry(32, 38),
+        new THREE.MeshLambertMaterial({ color: 0x2d2d2d })
+      );
+      road.rotation.x = -Math.PI / 2;
+      road.position.y = 0.05;
+      group.add(road);
+      const lineGeo = new THREE.PlaneGeometry(0.4, 38);
+      const lineMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      [-6, 0, 6].forEach(lx => {
+        const ln = new THREE.Mesh(lineGeo, lineMat);
+        ln.rotation.x = -Math.PI / 2;
+        ln.position.set(lx, 0.06, 0);
+        group.add(ln);
+      });
+      for (let i = 0; i < count; i++) {
+        const w   = 2.5 + Math.random() * 4;
+        const d   = 2.5 + Math.random() * 4;
+        const h   = 6   + Math.random() * (i < 4 ? 28 : 12);
+        const col = new THREE.Color(BLDG_COLORS[Math.floor(Math.random() * BLDG_COLORS.length)]);
+        const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col.clone().multiplyScalar(0.12), shininess: 60 });
+        const bldg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        bldg.position.set((Math.random() - 0.5) * 26, h / 2, (Math.random() - 0.5) * 32);
+        group.add(bldg);
+        if (h > 22 && Math.random() > 0.5) {
+          const ant = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.06, 0.06, 3.5, 4),
+            new THREE.MeshPhongMaterial({ color: 0xcccccc })
+          );
+          ant.position.set(bldg.position.x + (Math.random()-0.5), bldg.position.y + h/2 + 1.75, bldg.position.z + (Math.random()-0.5));
+          group.add(ant);
+        }
+      }
+      group.position.set(side * (30 + Math.random() * 16), -20, 300 + Math.random() * 700);
+      group.userData.side = side;
+      scene.add(group);
+      cityBlocks.push(group);
+    }
+
+    // ── Clouds and birds ───────────────────────────────────────────────────────
+    function createCloud() {
+      const group = new THREE.Group();
+      const mat   = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      for (let i = 0; i < 5; i++) {
+        const r = 1 + Math.random();
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 8), mat);
+        m.position.set(Math.random()*2-1, Math.random()-0.5, Math.random()*2-1);
+        group.add(m);
+      }
+      group.position.set(Math.random()*100-50, Math.random()*20-5, Math.random()*200-50);
+      const s = 1 + Math.random() * 2;
+      group.scale.set(s, s*0.6, s);
+      scene.add(group);
+      clouds.push(group);
+    }
+
+    function createBird() {
+      const group = new THREE.Group();
+      group.add(new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8),
+        new THREE.MeshPhongMaterial({ color: 0x333333 })));
+      const wm = new THREE.MeshPhongMaterial({ color: 0x555555 });
+      const wg = new THREE.BoxGeometry(1, 0.05, 0.3);
+      const lw = new THREE.Mesh(wg, wm); lw.position.x = -0.5;
+      const rw = new THREE.Mesh(wg, wm); rw.position.x =  0.5;
+      group.add(lw, rw);
+      group.position.set(Math.random()*60-30, Math.random()*20-5, Math.random()*200);
+      group.userData = {
+        wingDir: 1, wingSpeed: 0.05 + Math.random()*0.05,
+        moveX: (Math.random()-0.5)*0.2, moveY: (Math.random()-0.5)*0.05,
+      };
+      scene.add(group);
+      birds.push(group);
+    }
+
+    // ── Collision detection ────────────────────────────────────────────────────
+    function checkCollisions() {
+      if (zenMode || invincible) return;
+      for (const ring of obstacles) {
+        const dz = ring.position.z - plane.position.z;
+        if (dz < 0 || dz > Math.max(speed * 2 + 2, 6)) continue;
+        const dx   = plane.position.x - ring.position.x;
+        const dy   = plane.position.y - ring.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const inner = ring.userData.radius - ring.userData.tube - 0.55;
+        const outer = ring.userData.radius + ring.userData.tube + 0.55;
+        if (dist > inner && dist < outer) { loseLife(); return; }
+      }
+    }
+
+    // ── HUD ────────────────────────────────────────────────────────────────────
+    function refreshHUD() {
+      document.getElementById('scoreDisplay')   .textContent = 'Score: ' + score;
+      document.getElementById('accuracyDisplay').textContent = 'Accuracy: ' + getAccuracy();
+      document.getElementById('distDisplay')    .textContent = 'Dist: ' + formatDist(distanceTraveled);
+      document.getElementById('flightDisplay')  .textContent =
+        'Alt: ' + Math.round(plane.position.y * 10 + 500) + ' m | ' + speed.toFixed(1) + '×';
+      document.getElementById('liveDisplay').innerHTML = getLivesHtml();
+      document.getElementById('highScoreDisplay').textContent = 'Best: ' + highScore;
+    }
+
+    // ── Animation loop ─────────────────────────────────────────────────────────
     function animate() {
       requestAnimationFrame(animate);
-      
-      if (gameActive) {
-        // Move the plane forward
+
+      if (gameState === 'playing') {
+        const ms   = 0.13;
+        const dirX = invertX ? -1 :  1;
+        const dirY = invertY ? -1 :  1;
+
+        // Movement
+        let movingH = false, movingV = false;
+        if (keysDown['ArrowRight']) { plane.position.x += ms*dirX; targetBankZ = -0.35*dirX; movingH = true; }
+        if (keysDown['ArrowLeft'])  { plane.position.x -= ms*dirX; targetBankZ =  0.35*dirX; movingH = true; }
+        if (!movingH) targetBankZ = 0;
+        if (keysDown['ArrowUp'])    { plane.position.y += ms*dirY; targetBankX =  0.18*dirY; movingV = true; }
+        if (keysDown['ArrowDown'])  { plane.position.y -= ms*dirY; targetBankX = -0.18*dirY; movingV = true; }
+        if (!movingV) targetBankX = 0;
+
+        plane.position.x = Math.max(-9, Math.min(9,  plane.position.x));
+        plane.position.y = Math.max(-8, Math.min(10, plane.position.y));
+        plane.rotation.z = THREE.MathUtils.lerp(plane.rotation.z, targetBankZ, 0.12);
+        plane.rotation.x = THREE.MathUtils.lerp(plane.rotation.x, targetBankX, 0.12);
+
         plane.position.z += speed;
+        distanceTraveled += speed;
+
+        // Invincibility blink
+        if (invincible) {
+          invincibleFrames--;
+          plane.visible = Math.floor(invincibleFrames / 7) % 2 === 0;
+          if (invincibleFrames <= 0) { invincible = false; plane.visible = true; }
+        }
+
+        // Camera follows plane
         camera.position.z += speed;
-        
-        // Move and animate clouds
-        clouds.forEach(cloud => {
-          cloud.position.z -= speed * 0.3;
-          
-          // Respawn cloud if it's behind the camera
-          if (cloud.position.z < camera.position.z - 20) {
-            cloud.position.z = camera.position.z + 180;
-            cloud.position.x = Math.random() * 100 - 50;
-            cloud.position.y = Math.random() * 20 - 5;
+        camera.position.y  = THREE.MathUtils.lerp(camera.position.y, plane.position.y + 2,    0.08);
+        camera.position.x  = THREE.MathUtils.lerp(camera.position.x, plane.position.x * 0.25, 0.08);
+
+        // Screen shake
+        if (shakeFrames > 0) {
+          const mag = shakeIntensity * (shakeFrames / 16);
+          camera.position.x += (Math.random() - 0.5) * mag;
+          camera.position.y += (Math.random() - 0.5) * mag;
+          shakeFrames--;
+        }
+
+        camera.lookAt(plane.position.x, plane.position.y, plane.position.z + 10);
+
+        ground.position.z = camera.position.z;
+        skyBox.position.copy(camera.position);
+
+        // Contrails
+        updateContrails();
+
+        // Engine sound pitch
+        updateEngineSound();
+
+        // Clouds
+        clouds.forEach(c => {
+          c.position.z -= speed * 0.3;
+          if (c.position.z < camera.position.z - 30) {
+            c.position.z = camera.position.z + 180;
+            c.position.x = Math.random()*100-50;
+            c.position.y = Math.random()*20-5;
           }
         });
-        
-        // Move and animate birds
-        birds.forEach(bird => {
-          // Move bird
-          bird.position.z -= speed * 0.5;
-          bird.position.x += bird.userData.moveSpeed.x;
-          bird.position.y += bird.userData.moveSpeed.y;
-          
-          // Flap wings
-          if (bird.children[1] && bird.children[2]) {
-            bird.children[1].rotation.z += bird.userData.wingSpeed * bird.userData.wingDirection;
-            bird.children[2].rotation.z -= bird.userData.wingSpeed * bird.userData.wingDirection;
-            
-            // Reverse wing direction
-            if (
-              Math.abs(bird.children[1].rotation.z) > 0.5 ||
-              Math.abs(bird.children[2].rotation.z) > 0.5
-            ) {
-              bird.userData.wingDirection *= -1;
+
+        // Birds
+        birds.forEach(b => {
+          b.position.z -= speed * 0.5;
+          b.position.x += b.userData.moveX;
+          b.position.y += b.userData.moveY;
+          const lw = b.children[1], rw = b.children[2];
+          if (lw && rw) {
+            lw.rotation.z += b.userData.wingSpeed * b.userData.wingDir;
+            rw.rotation.z -= b.userData.wingSpeed * b.userData.wingDir;
+            if (Math.abs(lw.rotation.z) > 0.5) b.userData.wingDir *= -1;
+          }
+          if (b.position.z < camera.position.z - 30) {
+            b.position.z = camera.position.z + 180;
+            b.position.x = Math.random()*60-30;
+            b.position.y = Math.random()*20-5;
+          }
+        });
+
+        // Rings: oscillate, score, recycle
+        const now = performance.now() / 1000;
+        obstacles.forEach(ring => {
+          ring.rotation.z += 0.005;
+
+          // Moving rings oscillate
+          if (ring.userData.moving) {
+            const ud  = ring.userData;
+            const off = Math.sin(now * ud.oscSpeed + ud.oscPhase) * ud.oscAmp;
+            if (ud.oscAxis === 'x') ring.position.x = ud.baseX + off;
+            else                    ring.position.y = ud.baseY + off;
+          }
+
+          // Scoring when plane crosses ring
+          if (!ring.userData.passed && ring.position.z < plane.position.z) {
+            ring.userData.passed = true;
+            totalRings++;
+
+            const dx     = plane.position.x - ring.position.x;
+            const dy     = plane.position.y - ring.position.y;
+            const dist2D = Math.sqrt(dx * dx + dy * dy);
+            const holeR  = ring.userData.radius - ring.userData.tube;
+
+            if (dist2D < holeR) {
+              // Flew through the hole
+              ringsScored++;
+              combo++;
+              comboMax = Math.max(comboMax, combo);
+              const pts = Math.min(combo, 4);
+              score += pts;
+              ring.material.color.set(0x00ff88);
+              setTimeout(() => { ring.material.color.set(ring.userData.baseColor); }, 350);
+              if (ringsScored % 5 === 0) speed = Math.min(speed + 0.08, 3.0);
+              playRingSound(combo);
+              if (combo >= 2) showComboPopup(combo, false);
+            } else {
+              // Went around
+              if (combo >= 2) showComboPopup(0, true);
+              combo = 0;
+              ring.material.color.set(0xff8800);
+              setTimeout(() => { ring.material.color.set(ring.userData.baseColor); }, 350);
+              playMissSound();
             }
+            refreshHUD();
           }
-          
-          // Respawn bird if it's behind the camera
-          if (bird.position.z < camera.position.z - 20) {
-            bird.position.z = camera.position.z + 180;
-            bird.position.x = Math.random() * 60 - 30;
-            bird.position.y = Math.random() * 20 - 5;
-          }
-        });
-        
-        // Check obstacle positions and create new ones
-        obstacles.forEach((obstacle, index) => {
-          // If obstacle is passed, increase score
-          if (!obstacle.userData.passed && obstacle.position.z < plane.position.z) {
-            score++;
-            document.getElementById('score').textContent = 'Score: ' + score;
-            obstacle.userData.passed = true;
-            
-            // Increase speed slightly
-            if (score % 5 === 0) {
-              speed += 0.05;
-            }
-          }
-          
-          // If obstacle is behind camera, move it forward
-          if (obstacle.position.z < camera.position.z - 20) {
-            obstacle.position.z = camera.position.z + 180;
-            obstacle.position.x = Math.random() * 20 - 10;
-            obstacle.position.y = Math.random() * 10 - 5;
-            obstacle.userData.passed = false;
+
+          // Recycle ring
+          if (ring.position.z < camera.position.z - 30) {
+            const sp  = RING_SPACING[ringSpacing];
+            const fZ  = obstacles.reduce((m, o) => Math.max(m, o.position.z), camera.position.z);
+            const bx  = Math.random() * 14 - 7;
+            const by  = Math.random() * 8  - 2;
+            ring.position.z = fZ + sp.base + Math.random() * sp.var;
+            ring.position.x = bx;
+            ring.position.y = by;
+            ring.userData.baseX  = bx;
+            ring.userData.baseY  = by;
+            ring.userData.oscPhase = Math.random() * Math.PI * 2;
+            ring.userData.passed = false;
           }
         });
-        
-        // Check collisions
+
+        // Terrain recycling
+        const behind = camera.position.z - 60;
+        const ahead  = camera.position.z + 380;
+
+        mountains.forEach(m => {
+          if (m.position.z < behind) {
+            const s = Math.random() < 0.5 ? 1 : -1;
+            m.position.x = s * (26 + Math.random() * 28);
+            m.position.z = ahead + Math.random() * 200;
+          }
+        });
+        treeGroups.forEach(t => {
+          if (t.position.z < behind) {
+            const s = Math.random() < 0.5 ? 1 : -1;
+            t.position.x = s * (13 + Math.random() * 9);
+            t.position.z = ahead + Math.random() * 150;
+          }
+        });
+        cityBlocks.forEach(c => {
+          if (c.position.z < behind) {
+            const s = Math.random() < 0.5 ? 1 : -1;
+            c.position.x = s * (30 + Math.random() * 16);
+            c.position.z = ahead + Math.random() * 300;
+          }
+        });
+
+        // Live altitude in HUD
+        document.getElementById('flightDisplay').textContent =
+          'Alt: ' + Math.round(plane.position.y * 10 + 500) + ' m | ' + speed.toFixed(1) + '×';
+
         checkCollisions();
       }
-      
+
       renderer.render(scene, camera);
     }
-    
-    // Start the game initialization
+
     init();
   </script>
 </body>
