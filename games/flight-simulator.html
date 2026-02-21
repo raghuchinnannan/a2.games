@@ -500,6 +500,15 @@
     let _triggeredMilestones = new Set();
     let _burstParticles      = [];   // { mesh, life, maxLife }
 
+    // ── Sponsors ───────────────────────────────────────────────────────────────
+    let sponsors = [
+      { name: 'Textpro.xyz',  tagline: 'Free tools' },
+      { name: 'A2.games',     tagline: 'More games' },
+    ];
+    let _sponsorIdx = 0;
+    function _nextSponsor() { return sponsors[_sponsorIdx++ % sponsors.length]; }
+    const hotAirBalloons = [];
+
     const keysDown  = {};
     let targetBankZ = 0, targetBankX = 0;
 
@@ -982,6 +991,15 @@
       for (let i = 0; i < 16; i++) createMountain();
       for (let i = 0; i < 14; i++) createTreeCluster();
       for (let i = 0; i < 5;  i++) createCityBlock();
+      for (let i = 0; i < 4;  i++) {
+        const s = Math.random() < 0.5 ? 1 : -1;
+        createHotAirBalloon(
+          _nextSponsor(),
+          s * (18 + Math.random() * 22),
+          8  + Math.random() * 10,
+          120 + i * 180 + Math.random() * 100
+        );
+      }
 
       window.addEventListener('resize', () => {
         camera.aspect = innerWidth / innerHeight;
@@ -1203,6 +1221,11 @@
       spawnRings();
       clouds.forEach(c => c.position.set(Math.random()*100-50, Math.random()*20-5, Math.random()*200-50));
       birds.forEach(b  => b.position.set(Math.random()*60-30,  Math.random()*20-5, Math.random()*200));
+      hotAirBalloons.forEach(b => {
+        const s = Math.random() < 0.5 ? 1 : -1;
+        b.position.set(s * (18 + Math.random() * 22), 8 + Math.random() * 10, 120 + Math.random() * 700);
+        b.userData.baseY = b.position.y;
+      });
       _resetTrailPts();
       gameState = 'playing';
       initAudio();
@@ -1446,6 +1469,19 @@
           ant.position.set(bldg.position.x + (Math.random()-0.5), bldg.position.y + h/2 + 1.75, bldg.position.z + (Math.random()-0.5));
           group.add(ant);
         }
+        // Sponsor billboard on tall buildings
+        if (h > 16) {
+          const bsp  = _nextSponsor();
+          const bw   = Math.min(w * 0.85, 4.5);
+          const bh   = bw * 0.5;
+          const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(bw, bh),
+            new THREE.MeshBasicMaterial({ map: makeSponsorTexture(bsp, 512, 256, 'billboard') })
+          );
+          sign.position.set(bldg.position.x, bldg.position.y + h * 0.15, bldg.position.z - d / 2 - 0.08);
+          sign.rotation.y = Math.PI;
+          group.add(sign);
+        }
       }
       group.position.set(side * (30 + Math.random() * 16), -20, 300 + Math.random() * 700);
       group.userData.side = side;
@@ -1486,6 +1522,118 @@
       };
       scene.add(group);
       birds.push(group);
+    }
+
+    // ── Sponsor canvas texture ─────────────────────────────────────────────────
+    function _sponsorBgColor(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return ['#0d1b2a', '#1b0d2a', '#0d2a1b', '#2a1a0d'][Math.abs(h) % 4];
+    }
+    function _sponsorStripes(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      const P = [
+        ['#e63946','#f4a261','#2a9d8f','#e9c46a','#264653','#f4a261','#e63946','#e9c46a'],
+        ['#8338ec','#3a86ff','#fb5607','#ff006e','#ffbe0b','#8338ec','#3a86ff','#ff006e'],
+        ['#06d6a0','#118ab2','#073b4c','#ffd166','#ef476f','#06d6a0','#118ab2','#ffd166'],
+      ];
+      return P[Math.abs(h) % P.length];
+    }
+
+    function makeSponsorTexture(sponsor, w, texH, style) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = texH;
+      const ctx = canvas.getContext('2d');
+      if (style === 'balloon') {
+        const stripes = _sponsorStripes(sponsor.name);
+        const sw = canvas.width / stripes.length;
+        stripes.forEach((c, si) => { ctx.fillStyle = c; ctx.fillRect(si * sw, 0, sw, canvas.height); });
+        ctx.fillStyle = 'rgba(0,0,0,0.40)';
+        ctx.fillRect(0, canvas.height * 0.29, canvas.width, canvas.height * 0.44);
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.round(canvas.width * 0.115)}px Arial`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(sponsor.name,    canvas.width / 2, canvas.height * 0.57);
+        ctx.font = `${Math.round(canvas.width * 0.065)}px Arial`;
+        ctx.fillStyle = '#ffd700'; ctx.shadowBlur = 5;
+        ctx.fillText(sponsor.tagline, canvas.width / 2, canvas.height * 0.65);
+      } else {
+        ctx.fillStyle = _sponsorBgColor(sponsor.name);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 6;
+        ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(3, 3, canvas.width - 6, 7);
+        ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 5;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.round(canvas.width * 0.162)}px Arial`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(sponsor.name,    canvas.width / 2, canvas.height * 0.52);
+        ctx.font = `${Math.round(canvas.width * 0.082)}px Arial`;
+        ctx.fillStyle = '#88ccff'; ctx.shadowBlur = 4;
+        ctx.fillText(sponsor.tagline, canvas.width / 2, canvas.height * 0.78);
+      }
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // ── Hot air balloon ────────────────────────────────────────────────────────
+    function createHotAirBalloon(sponsor, x, y, z) {
+      const group    = new THREE.Group();
+      const envTex   = makeSponsorTexture(sponsor, 512, 512, 'balloon');
+      const envelope = new THREE.Mesh(
+        new THREE.SphereGeometry(3.5, 24, 24),
+        new THREE.MeshPhongMaterial({ map: envTex, shininess: 20 })
+      );
+      envelope.scale.y = 1.35;
+      group.add(envelope);
+
+      // Neck cylinder at bottom of envelope
+      const neckMat = new THREE.MeshPhongMaterial({ color: 0x777777 });
+      const neck    = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 1.2, 8), neckMat);
+      neck.position.y = -(3.5 * 1.35 + 0.6);
+      group.add(neck);
+
+      // Burner glow (point light inside envelope opening)
+      const glow = new THREE.PointLight(0xff6600, 1.4, 10);
+      glow.position.y = -3.8;
+      group.add(glow);
+
+      // Ropes connecting envelope base to basket
+      const ropeMat = new THREE.MeshPhongMaterial({ color: 0x8B6914 });
+      const ropeLen = 3.0;
+      [[-0.7,-0.7],[-0.7,0.7],[0.7,-0.7],[0.7,0.7]].forEach(([rx, rz]) => {
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, ropeLen, 4), ropeMat);
+        rope.position.set(rx * 0.4, -(3.5 * 1.35 + 1.2 + ropeLen / 2), rz * 0.4);
+        rope.rotation.z = rx * 0.2;
+        rope.rotation.x = rz * 0.2;
+        group.add(rope);
+      });
+
+      // Basket
+      const basketMat = new THREE.MeshPhongMaterial({ color: 0x8B5E3C, shininess: 5 });
+      const basket    = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 1.6), basketMat);
+      basket.position.y = -(3.5 * 1.35 + 1.2 + ropeLen + 0.5);
+      group.add(basket);
+
+      group.position.set(x, y, z);
+      group.userData = {
+        bobPhase:     Math.random() * Math.PI * 2,
+        bobSpeed:     0.38 + Math.random() * 0.28,
+        baseY:        y,
+        envelopeMesh: envelope,
+      };
+      scene.add(group);
+      hotAirBalloons.push(group);
+    }
+
+    function _refreshBalloonSponsor(balloon) {
+      const old = balloon.userData.envelopeMesh.material.map;
+      const tex = makeSponsorTexture(_nextSponsor(), 512, 512, 'balloon');
+      balloon.userData.envelopeMesh.material.map = tex;
+      balloon.userData.envelopeMesh.material.needsUpdate = true;
+      if (old) old.dispose();
     }
 
     // ── Collision detection ────────────────────────────────────────────────────
@@ -1738,6 +1886,18 @@
           }
         });
 
+        // Hot air balloons: gentle bob + sponsor recycling
+        hotAirBalloons.forEach(b => {
+          b.position.y = b.userData.baseY + Math.sin(now * b.userData.bobSpeed + b.userData.bobPhase) * 0.7;
+          if (b.position.z < behind) {
+            const s = Math.random() < 0.5 ? 1 : -1;
+            b.position.x = s * (18 + Math.random() * 22);
+            b.position.z = ahead + Math.random() * 250;
+            b.userData.baseY = 8 + Math.random() * 10;
+            _refreshBalloonSponsor(b);
+          }
+        });
+
         // Live altitude in HUD
         document.getElementById('flightDisplay').textContent =
           'Alt: ' + Math.round(plane.position.y * 10 + 500) + ' m | ' + speed.toFixed(1) + '×';
@@ -1756,7 +1916,13 @@
       renderer.render(scene, camera);
     }
 
-    init();
+    // Load sponsors from sponsor.json before initialising the scene so textures
+    // are rendered with the correct content on first creation.
+    fetch('sponsor.json')
+      .then(r => r.json())
+      .then(js => { if (Array.isArray(js) && js.length) sponsors = js; })
+      .catch(() => {})
+      .finally(() => init());
   </script>
 </body>
 </html>
