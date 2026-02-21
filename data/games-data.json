@@ -1,5 +1,14 @@
 {
   "games": [
+     {
+      "id": "flight-simulator",
+      "name": "3D Flight Simulator",
+      "description": "Pilot your plane through 3D skies! Dodge obstacles, avoid clouds and birds!",
+      "image": "./images/hero-images/flight-simulator.png",
+      "url": "./games/flight-simulator.html",
+      "tags": ["action", "arcade", "mobile"],
+      "platforms": ["desktop", "mobile"]
+    },
     {
       "id": "memory-match",
       "name": "Memory Match",
@@ -242,15 +251,6 @@
       "url": "./games/word-scramble-rush.html",
       "tags": ["puzzle", "arcade"],
       "platforms": ["desktop", "mobile"]
-    },
-    {
-      "id": "flight-simulator",
-      "name": "3D Flight Simulator",
-      "description": "Pilot your plane through 3D skies! Dodge obstacles, avoid clouds and birds!",
-      "image": "./images/hero-images/flight-simulator.svg",
-      "url": "./games/flight-simulator.html",
-      "tags": ["action", "arcade"],
-      "platforms": ["desktop"]
     },
     {
       "id": "pac-man",
