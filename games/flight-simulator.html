@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Flight Simulator</title>
+  <title>3D Flight Simulator | A2.games</title>
+  <link rel="icon" type="image/x-icon" href="/images/favicons/flight.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; font-family: Arial, sans-serif; }
@@ -27,7 +28,7 @@
       font-style: normal;
     }
     #comboPopup {
-      position: absolute; top: 38%; left: 50%;
+      position: absolute; top: 20%; left: 50%;
       transform: translateX(-50%);
       font-size: 30px; font-weight: bold;
       text-shadow: 0 0 20px currentColor;
@@ -35,6 +36,53 @@
       pointer-events: none; z-index: 50;
       letter-spacing: 2px;
     }
+    #nearMissPopup {
+      position: absolute; top: 27%; left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px; font-weight: bold;
+      color: #ffd700; text-shadow: 0 0 14px #ffd700;
+      opacity: 0; transition: opacity 0.35s ease;
+      pointer-events: none; z-index: 50;
+      letter-spacing: 1px; white-space: nowrap;
+    }
+
+    /* ── Screen flash (milestone) ─────────────────────────────────────────── */
+    #screenFlash {
+      position: absolute; inset: 0;
+      background: #ffd700; opacity: 0;
+      pointer-events: none; z-index: 140;
+      transition: opacity 0.5s ease;
+    }
+
+    /* ── Achievement badge popup ──────────────────────────────────────────── */
+    #badgePopup {
+      position: absolute; top: 70px; right: 20px;
+      transform: translateX(calc(100% + 30px));
+      background: rgba(10,10,20,0.93);
+      border: 2px solid #ffd700; border-radius: 12px;
+      padding: 10px 14px; display: flex; align-items: center; gap: 11px;
+      color: white; z-index: 200; max-width: 235px;
+      box-shadow: 0 4px 24px rgba(255,215,0,0.35);
+      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #badgePopup.show { transform: translateX(0); }
+    .badge-icon  { font-size: 26px; flex-shrink: 0; }
+    .badge-text  { display: flex; flex-direction: column; min-width: 0; }
+    .badge-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1.6px; color: #ffd700; margin-bottom: 2px; }
+    .badge-name  { font-size: 14px; font-weight: bold; }
+    .badge-desc  { font-size: 11px; opacity: 0.62; margin-top: 1px; }
+
+    /* ── Milestone popup ─────────────────────────────────────────────────── */
+    #milestonePopup {
+      position: absolute; top: 40%; left: 50%;
+      transform: translateX(-50%);
+      text-align: center; white-space: nowrap;
+      pointer-events: none; z-index: 75;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .milestone-score { font-size: 54px; font-weight: bold; text-shadow: 0 0 32px currentColor; }
+    .milestone-msg   { font-size: 24px; color: white; font-weight: bold;
+                       text-shadow: 0 0 14px rgba(255,255,255,0.8); margin-top: 2px; }
 
     .overlay {
       position: absolute; top: 50%; left: 50%;
@@ -206,8 +254,24 @@
   </div>
   <div id="highScoreDisplay">Best: 0</div>
 
-  <!-- Combo popup -->
+  <!-- Combo / near-miss popups -->
   <div id="comboPopup"></div>
+  <div id="nearMissPopup"></div>
+
+  <!-- Screen flash + achievement badge + milestone -->
+  <div id="screenFlash"></div>
+  <div id="badgePopup">
+    <div class="badge-icon" id="badgeIcon">🏆</div>
+    <div class="badge-text">
+      <div class="badge-title">Achievement Unlocked</div>
+      <div class="badge-name" id="badgeName"></div>
+      <div class="badge-desc" id="badgeDesc"></div>
+    </div>
+  </div>
+  <div id="milestonePopup">
+    <div class="milestone-score" id="milestoneScore"></div>
+    <div class="milestone-msg"   id="milestoneMsg"></div>
+  </div>
 
   <!-- Start screen -->
   <div id="startScreen" class="overlay">
@@ -216,7 +280,8 @@
     <p>⬆️⬇️⬅️➡️ &nbsp;Arrow keys (or D-pad on mobile)</p>
     <p>💥 Hit the ring frame = lose a life &nbsp;|&nbsp; 🟠 Going around = no score</p>
     <p>🔥 Chain rings for ×2 / ×3 / ×4 combo &nbsp;|&nbsp; 🚀 Speed up every 5 rings</p>
-    <p>🔵 Blue rings move — watch out!</p>
+    <p>🔵 Blue rings move — watch out! &nbsp;|&nbsp; 🌟 Gold rings = 3 pts + slow speed</p>
+    <p>✨ Brush the inner edge for a Near-Miss +1 bonus!</p>
     <button class="button" id="startButton">▶ Start Game</button><br>
     <button class="button zen-btn" id="zenButton">🧘 Zen Mode</button><br>
     <button class="btn-ghost" id="settingsBtnStart">⚙️ Settings</button>
@@ -239,6 +304,7 @@
       <span class="label">Best score</span>
       <span class="value gold" id="finalBest">0</span>
     </div>
+    <div id="goBadgesRow" style="margin:6px 0 16px; min-height:32px;"></div>
     <button class="button" id="restartButton">Restart</button>
   </div>
 
@@ -298,10 +364,18 @@
       </div>
       <div class="speed-hint">Ring changes take effect on next game</div>
     </div>
+    <div class="settings-section">
+      <h3>Sky Mode</h3>
+      <div class="seg-control" id="dayNightCtrl">
+        <button class="seg-btn" data-val="day">☀️ Day</button>
+        <button class="seg-btn" data-val="auto">🌅 Cycle</button>
+        <button class="seg-btn" data-val="night">🌙 Night</button>
+      </div>
+    </div>
     <button class="button" id="closeSettings">Done</button>
   </div>
 
-  <div id="instructions">Fly through rings · Chain for combo · Esc = pause</div>
+  <div id="instructions">Fly through rings · Chain for combo · Double-tap ← → = barrel roll · Esc = pause</div>
 
   <!-- Mobile D-pad -->
   <div id="touchControls">
@@ -327,6 +401,7 @@
       parseFloat(localStorage.getItem('flightStartSpeed') || '0.3')));
     let ringSize    = localStorage.getItem('flightRingSize')    || 'large';
     let ringSpacing = localStorage.getItem('flightRingSpacing') || 'far';
+    let dayNightMode = localStorage.getItem('flightDayNight') || 'auto'; // 'day'|'night'|'auto'
 
     // ── Constants ──────────────────────────────────────────────────────────────
     const MAX_LIVES         = 3;
@@ -352,6 +427,9 @@
     let combo    = 0;
     let comboMax = 0;
 
+    // Gold ring counter (every 8th ring spawned/recycled is gold)
+    let ringSpawnCounter = 0;
+
     // Lives / invincibility
     let lives            = MAX_LIVES;
     let invincible       = false;
@@ -365,9 +443,19 @@
     let shakeIntensity = 0;
 
     // Audio
-    let audioCtx   = null;
-    let engineOsc  = null;
-    let engineGain = null;
+    let audioCtx      = null;
+    let engineOsc     = null;   // primary drone
+    let engineOsc2    = null;   // slightly detuned for beating
+    let engineHarm    = null;   // sub-octave for depth
+    let engineFilter  = null;
+    let engineGain    = null;
+
+    // Adaptive beat
+    let _beatPlaying = false;
+    let _beatNext    = 0;
+    let _beatCount   = 0;
+    let _beatTimer   = null;
+    let _noiseCache  = null;
 
     // Contrails
     let leftTrailPts  = [];
@@ -375,8 +463,51 @@
     let leftTrailLine  = null;
     let rightTrailLine = null;
 
+    // Lights (stored for day/night animation)
+    let ambientLight, sunLight, hemiLight;
+
+    // Barrel roll
+    let barrelRoll = 0;   // frames remaining (0 = not rolling)
+    let barrelDir  = 1;   // +1 = left spin, -1 = right spin
+    const lastTapTime = {};
+
+    // ── Achievements ────────────────────────────────────────────────────────
+    const ACHIEVEMENTS = [
+      { id: 'first_blood',    icon: '🩸', label: 'First Blood',      desc: 'Score your very first point'      },
+      { id: 'sharpshooter',  icon: '🎯', label: 'Sharpshooter',     desc: '100% accuracy over 10+ rings'     },
+      { id: 'speed_demon',   icon: '⚡', label: 'Speed Demon',       desc: 'Hit 2× speed'                     },
+      { id: 'combo_king',    icon: '👑', label: 'Combo King',        desc: 'Reach ×4 Max Combo'               },
+      { id: 'gold_rush',     icon: '🌟', label: 'Gold Rush',         desc: 'Collect 3 gold rings in one run'  },
+      { id: 'near_miss_ace', icon: '✨', label: 'Near Miss Ace',     desc: 'Land 5 near-miss bonuses'         },
+      { id: 'ace_pilot',     icon: '🌀', label: 'Ace Pilot',         desc: 'Pull off a barrel roll'           },
+      { id: 'century',       icon: '💯', label: 'Century',           desc: 'Score 100 points'                 },
+      { id: 'zen_master',    icon: '🧘', label: 'Zen Master',        desc: 'Score 20 pts in Zen Mode'         },
+    ];
+    let earnedBadges  = new Set(JSON.parse(localStorage.getItem('flightBadges') || '[]'));
+    let _badgeQueue   = [], _badgeShowing = false, sessionBadges = [];
+
+    // Per-session achievement trackers
+    let goldRingsCollected = 0, nearMissCount = 0, barrelRollDone = false;
+
+    // ── Milestones ──────────────────────────────────────────────────────────
+    const MILESTONES     = [10, 25, 50, 100];
+    const MILESTONE_MSGS = {
+      10:  { msg: 'Taking Off! 🚀',  color: '#00ff88' },
+      25:  { msg: 'On a Roll! 🔥',   color: '#ff8800' },
+      50:  { msg: 'Sky High! ⭐',    color: '#ffd700' },
+      100: { msg: 'Legendary! 🏆',   color: '#ff44aa' },
+    };
+    let _triggeredMilestones = new Set();
+    let _burstParticles      = [];   // { mesh, life, maxLife }
+
     const keysDown  = {};
     let targetBankZ = 0, targetBankX = 0;
+
+    // ── Day/night colour constants (pre-allocated to avoid GC) ─────────────────
+    const _dnDay    = { sky: new THREE.Color(0x87CEEB), zenith: new THREE.Color(0x4a8fd4) };
+    const _dnSunset = { sky: new THREE.Color(0xff7043), zenith: new THREE.Color(0xc84b17) };
+    const _dnNight  = { sky: new THREE.Color(0x0a1628), zenith: new THREE.Color(0x050a12) };
+    const _dnTmp    = new THREE.Color();
 
     // ── Ring configuration ─────────────────────────────────────────────────────
     const RING_SIZE = {
@@ -412,66 +543,240 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
       } catch(e) {}
     }
+
+    // ── Engine sound (3-oscillator drone through low-pass filter) ───────────────
     function startEngineSound() {
       if (!audioCtx || engineOsc) return;
-      engineOsc  = audioCtx.createOscillator();
+      const base = 55 + speed * 35;
+
+      engineFilter = audioCtx.createBiquadFilter();
+      engineFilter.type = 'lowpass';
+      engineFilter.frequency.value = 260 + speed * 80;
+      engineFilter.Q.value = 1.8;
+
       engineGain = audioCtx.createGain();
+      engineGain.gain.value = 0.07;
+
+      engineOsc = audioCtx.createOscillator();        // primary sawtooth
       engineOsc.type = 'sawtooth';
-      engineOsc.frequency.value = 55 + speed * 35;
-      engineGain.gain.value = 0.05;
-      engineOsc.connect(engineGain);
+      engineOsc.frequency.value = base;
+
+      engineOsc2 = audioCtx.createOscillator();       // slightly detuned = beating
+      engineOsc2.type = 'sawtooth';
+      engineOsc2.frequency.value = base + 4.5;
+
+      engineHarm = audioCtx.createOscillator();       // sub-octave sine for depth
+      engineHarm.type = 'sine';
+      engineHarm.frequency.value = base * 0.5;
+      const harmGain = audioCtx.createGain();
+      harmGain.gain.value = 0.55;
+
+      engineOsc.connect(engineFilter);
+      engineOsc2.connect(engineFilter);
+      engineHarm.connect(harmGain);
+      harmGain.connect(engineFilter);
+      engineFilter.connect(engineGain);
       engineGain.connect(audioCtx.destination);
-      engineOsc.start();
+
+      engineOsc.start(); engineOsc2.start(); engineHarm.start();
     }
     function updateEngineSound() {
-      if (engineOsc) engineOsc.frequency.value = 55 + speed * 35;
+      if (!engineOsc) return;
+      const base = 55 + speed * 35;
+      engineOsc.frequency.value    = base;
+      engineOsc2.frequency.value   = base + 4.5;
+      engineHarm.frequency.value   = base * 0.5;
+      engineFilter.frequency.value = 260 + speed * 80;
     }
     function stopEngineSound() {
       if (!engineOsc) return;
-      try { engineOsc.stop(); } catch(e) {}
-      engineOsc.disconnect();
-      engineGain.disconnect();
-      engineOsc = null;
-      engineGain = null;
+      try { engineOsc.stop(); engineOsc2.stop(); engineHarm.stop(); } catch(e) {}
+      engineOsc.disconnect(); engineOsc2.disconnect(); engineHarm.disconnect();
+      engineFilter.disconnect(); engineGain.disconnect();
+      engineOsc = null; engineOsc2 = null; engineHarm = null;
+      engineFilter = null; engineGain = null;
     }
+
+    // ── Noise buffer (cached, used by beat hi-hat) ──────────────────────────────
+    function _getNoise() {
+      if (_noiseCache) return _noiseCache;
+      if (!audioCtx) return null;
+      const len = Math.round(audioCtx.sampleRate * 0.5);
+      _noiseCache = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const d = _noiseCache.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      return _noiseCache;
+    }
+
+    // ── One-shot tone helper ────────────────────────────────────────────────────
     function _tone(freq, type, vol, dur, freqEnd) {
       if (!audioCtx) return;
-      const osc  = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
       if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + dur);
       gain.gain.setValueAtTime(vol, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + dur);
     }
+
+    // ── Ring pass: whoosh sweep → clean ding (pitch rises with combo) ───────────
     function playRingSound(comboLevel) {
-      _tone(440 + (Math.min(comboLevel, 4) - 1) * 110, 'sine', 0.15, 0.25);
+      if (!audioCtx) return;
+      const dingFreq = 440 + (Math.min(comboLevel, 4) - 1) * 110;
+      const t = audioCtx.currentTime;
+      // Whoosh: descending sweep into the ding frequency
+      const wo = audioCtx.createOscillator(), wg = audioCtx.createGain();
+      wo.type = 'sine';
+      wo.frequency.setValueAtTime(dingFreq * 3, t);
+      wo.frequency.exponentialRampToValueAtTime(dingFreq, t + 0.07);
+      wg.gain.setValueAtTime(0.07, t); wg.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      wo.connect(wg); wg.connect(audioCtx.destination); wo.start(t); wo.stop(t + 0.07);
+      // Ding: bell-like sine with natural decay
+      const di = audioCtx.createOscillator(), dg = audioCtx.createGain();
+      di.type = 'sine'; di.frequency.value = dingFreq;
+      dg.gain.setValueAtTime(0.18, t + 0.06);
+      dg.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      di.connect(dg); dg.connect(audioCtx.destination);
+      di.start(t + 0.06); di.stop(t + 0.45);
     }
-    function playMissSound() {
-      _tone(300, 'sine', 0.07, 0.3, 150);
+
+    // ── Gold ring: higher whoosh + ascending triple chime ───────────────────────
+    function playGoldSound() {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const wo = audioCtx.createOscillator(), wg = audioCtx.createGain();
+      wo.type = 'sine';
+      wo.frequency.setValueAtTime(3520, t);
+      wo.frequency.exponentialRampToValueAtTime(880, t + 0.08);
+      wg.gain.setValueAtTime(0.08, t); wg.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      wo.connect(wg); wg.connect(audioCtx.destination); wo.start(t); wo.stop(t + 0.08);
+      [[880, 0.08], [1320, 0.18], [1760, 0.28]].forEach(([freq, delay]) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.14, t + delay);
+        g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.45);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t + delay); o.stop(t + delay + 0.45);
+      });
     }
+
+    // ── Miss: descending tone ───────────────────────────────────────────────────
+    function playMissSound() { _tone(300, 'sine', 0.07, 0.3, 150); }
+
+    // ── Near-miss chime ─────────────────────────────────────────────────────────
+    function playNearMissSound() { _tone(660, 'sine', 0.09, 0.18); }
+
+    // ── Crash: low thud + sawtooth crunch overtones ─────────────────────────────
     function playHitSound() {
-      _tone(220, 'square', 0.2, 0.5, 60);
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      // Low thud
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(110, t);
+      o.frequency.exponentialRampToValueAtTime(36, t + 0.28);
+      g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 0.28);
+      // Crunch overtones
+      [190, 287, 380].forEach(f => {
+        const co = audioCtx.createOscillator(), cg = audioCtx.createGain();
+        co.type = 'sawtooth'; co.frequency.value = f;
+        cg.gain.setValueAtTime(0.07, t); cg.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        co.connect(cg); cg.connect(audioCtx.destination); co.start(t); co.stop(t + 0.12);
+      });
     }
+
+    // ── Game over: descending chord ─────────────────────────────────────────────
     function playGameOverSound() {
       if (!audioCtx) return;
       [440, 370, 311, 261].forEach((freq, i) => {
         const t = audioCtx.currentTime + i * 0.2;
-        const osc  = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = 'sine'; osc.frequency.value = freq;
         gain.gain.setValueAtTime(0.18, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(t);
-        osc.stop(t + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.4);
       });
+    }
+
+    // ── Adaptive music beat ─────────────────────────────────────────────────────
+    // BPM scales linearly from 72 (at startSpeed 0.3×) to 152 (at max 3.0×)
+    function _beatBPM() { return 72 + (speed - 0.3) / 2.7 * 80; }
+
+    function startBeat() {
+      if (!audioCtx || _beatPlaying) return;
+      _beatPlaying = true;
+      _beatCount   = 0;
+      _beatNext    = audioCtx.currentTime + 0.08;
+      _tickBeat();
+    }
+    function stopBeat() {
+      _beatPlaying = false;
+      clearTimeout(_beatTimer);
+    }
+    function _tickBeat() {
+      if (!_beatPlaying || !audioCtx) return;
+      const interval = 60 / _beatBPM(); // seconds per quarter note
+      while (_beatNext < audioCtx.currentTime + 0.15) {
+        const b = _beatCount % 4;
+        _beatKick(_beatNext);                          // kick on every beat
+        if (b === 1 || b === 3) _beatHat(_beatNext);  // hat on off-beats
+        _beatNext  += interval;
+        _beatCount++;
+      }
+      _beatTimer = setTimeout(_tickBeat, 25);
+    }
+    function _beatKick(t) {
+      if (!audioCtx) return;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(120, t);
+      o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+      g.gain.setValueAtTime(0.20, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + 0.22);
+    }
+    function _beatHat(t) {
+      const noise = _getNoise();
+      if (!audioCtx || !noise) return;
+      const src = audioCtx.createBufferSource();
+      const hpf = audioCtx.createBiquadFilter();
+      const g   = audioCtx.createGain();
+      src.buffer = noise;
+      hpf.type = 'highpass'; hpf.frequency.value = 7500;
+      g.gain.setValueAtTime(0.055, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+      src.connect(hpf); hpf.connect(g); g.connect(audioCtx.destination);
+      src.start(t); src.stop(t + 0.04);
+    }
+
+    // ── Day / night cycle ──────────────────────────────────────────────────────
+    // ph: 0 = full day, 1 = full night (oscillates with distance)
+    function updateDayNight(ph) {
+      const t1 = Math.min(ph * 2, 1);        // 0→1 during first half  (day → sunset)
+      const t2 = Math.max(ph * 2 - 1, 0);    // 0→1 during second half (sunset → night)
+
+      // Sky sides + fog + clear colour
+      _dnTmp.copy(_dnDay.sky).lerp(_dnSunset.sky, t1).lerp(_dnNight.sky, t2);
+      scene.fog.color.copy(_dnTmp);
+      renderer.setClearColor(_dnTmp);
+      skyBox.material[0].color.copy(_dnTmp);
+      skyBox.material[1].color.copy(_dnTmp);
+      skyBox.material[4].color.copy(_dnTmp);
+      skyBox.material[5].color.copy(_dnTmp);
+
+      // Zenith (top face)
+      _dnTmp.copy(_dnDay.zenith).lerp(_dnSunset.zenith, t1).lerp(_dnNight.zenith, t2);
+      skyBox.material[2].color.copy(_dnTmp);
+
+      // Lights
+      ambientLight.intensity = THREE.MathUtils.lerp(0.55, 0.10, ph);
+      sunLight.intensity     = THREE.MathUtils.lerp(1.2,  0.04, ph);
+      hemiLight.intensity    = THREE.MathUtils.lerp(0.40, 0.05, ph);
+      // Hemisphere sky shifts from sky-blue toward dark at night
+      _dnTmp.copy(_dnDay.sky).lerp(_dnNight.sky, ph);
+      hemiLight.color.copy(_dnTmp);
     }
 
     // ── Screen shake ───────────────────────────────────────────────────────────
@@ -496,6 +801,139 @@
       }
       el.style.opacity = '1';
       el._t = setTimeout(() => { el.style.opacity = '0'; }, lost ? 900 : 1300);
+    }
+
+    function showNearMissPopup() {
+      const el = document.getElementById('nearMissPopup');
+      el.textContent = '✨ Near Miss!  +1';
+      el.style.opacity = '1';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.style.opacity = '0'; }, 1100);
+    }
+
+    // ── Achievement system ──────────────────────────────────────────────────────
+    function checkAchievements() {
+      if (gameState !== 'playing') return;
+      const checks = {
+        first_blood:    () => score >= 1,
+        sharpshooter:   () => totalRings >= 10 && ringsScored === totalRings,
+        speed_demon:    () => speed >= 2.0,
+        combo_king:     () => combo >= 4,
+        gold_rush:      () => goldRingsCollected >= 3,
+        near_miss_ace:  () => nearMissCount >= 5,
+        ace_pilot:      () => barrelRollDone,
+        century:        () => score >= 100,
+        zen_master:     () => zenMode && score >= 20,
+      };
+      for (const ach of ACHIEVEMENTS) {
+        if (!earnedBadges.has(ach.id) && checks[ach.id]()) {
+          earnedBadges.add(ach.id);
+          localStorage.setItem('flightBadges', JSON.stringify([...earnedBadges]));
+          sessionBadges.push(ach);
+          queueBadge(ach);
+        }
+      }
+    }
+
+    function queueBadge(ach) {
+      _badgeQueue.push(ach);
+      if (!_badgeShowing) showNextBadge();
+    }
+
+    function showNextBadge() {
+      if (_badgeQueue.length === 0) { _badgeShowing = false; return; }
+      _badgeShowing = true;
+      const ach = _badgeQueue.shift();
+      document.getElementById('badgeIcon').textContent = ach.icon;
+      document.getElementById('badgeName').textContent = ach.label;
+      document.getElementById('badgeDesc').textContent = ach.desc;
+      const el = document.getElementById('badgePopup');
+      el.classList.add('show');
+      playBadgeSound();
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(showNextBadge, 500); // wait for slide-out then show next
+      }, 2800);
+    }
+
+    // ── Milestone system ────────────────────────────────────────────────────────
+    function checkMilestones() {
+      for (const m of MILESTONES) {
+        if (!_triggeredMilestones.has(m) && score >= m) {
+          _triggeredMilestones.add(m);
+          triggerMilestone(m);
+        }
+      }
+    }
+
+    function triggerMilestone(pts) {
+      const def = MILESTONE_MSGS[pts];
+      // Golden screen flash
+      const flash = document.getElementById('screenFlash');
+      flash.style.transition = 'none';
+      flash.style.opacity = '0.45';
+      requestAnimationFrame(() => {
+        flash.style.transition = 'opacity 0.6s ease';
+        requestAnimationFrame(() => { flash.style.opacity = '0'; });
+      });
+      // Milestone message popup
+      const el = document.getElementById('milestonePopup');
+      document.getElementById('milestoneScore').style.color = def.color;
+      document.getElementById('milestoneScore').textContent = pts + ' pts!';
+      document.getElementById('milestoneMsg').textContent   = def.msg;
+      clearTimeout(el._t);
+      el.style.opacity = '1';
+      el._t = setTimeout(() => { el.style.opacity = '0'; }, 2100);
+      // 3D ring burst
+      spawnRingBurst();
+      // Fanfare
+      playMilestoneSound();
+    }
+
+    function spawnRingBurst() {
+      const colors = [0xffd700, 0x00ff88, 0xff3300, 0x0099ff, 0xffffff, 0xff44aa];
+      for (let i = 0; i < 6; i++) {
+        const mat  = new THREE.MeshBasicMaterial({
+          color: colors[i], transparent: true, opacity: 0.85, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.1, 6, 24), mat);
+        mesh.position.copy(plane.position);
+        mesh.position.z += 3;
+        mesh.rotation.set(
+          Math.random() * Math.PI * 2,
+          Math.random() * Math.PI * 2,
+          Math.random() * Math.PI * 2
+        );
+        scene.add(mesh);
+        _burstParticles.push({ mesh, life: 55, maxLife: 55 });
+      }
+    }
+
+    // ── Badge & milestone sounds ────────────────────────────────────────────────
+    function playBadgeSound() {
+      if (!audioCtx) return;
+      [[880, 0, 0.18], [1100, 0.1, 0.25]].forEach(([freq, delay, dur]) => {
+        const t = audioCtx.currentTime + delay;
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.13, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + dur);
+      });
+    }
+
+    function playMilestoneSound() {
+      if (!audioCtx) return;
+      [[523, 0], [659, 0.1], [784, 0.2], [1047, 0.32]].forEach(([freq, delay]) => {
+        const t = audioCtx.currentTime + delay;
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.5);
+      });
     }
 
     // ── Lives ──────────────────────────────────────────────────────────────────
@@ -525,11 +963,13 @@
       renderer.setClearColor(0x87CEEB);
       document.body.appendChild(renderer.domElement);
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-      const sun = new THREE.DirectionalLight(0xfff4e0, 1.2);
-      sun.position.set(80, 300, 60);
-      scene.add(sun);
-      scene.add(new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.4));
+      ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+      scene.add(ambientLight);
+      sunLight = new THREE.DirectionalLight(0xfff4e0, 1.2);
+      sunLight.position.set(80, 300, 60);
+      scene.add(sunLight);
+      hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.4);
+      scene.add(hemiLight);
 
       createSkyBox();
       createGround();
@@ -571,6 +1011,12 @@
       updateStartSpeedUI();
       setupSegControl('ringSizeCtrl',    ringSize,    v => { ringSize    = v; localStorage.setItem('flightRingSize',    v); });
       setupSegControl('ringSpacingCtrl', ringSpacing, v => { ringSpacing = v; localStorage.setItem('flightRingSpacing', v); });
+      setupSegControl('dayNightCtrl', dayNightMode, v => {
+        dayNightMode = v;
+        localStorage.setItem('flightDayNight', v);
+        // Apply immediately so the sky updates right in the settings preview
+        if (v !== 'auto') updateDayNight(v === 'night' ? 1 : 0);
+      });
       document.getElementById('highScoreDisplay').textContent = 'Best: ' + highScore;
 
       animate();
@@ -622,6 +1068,19 @@
         if (gameState === 'playing') pauseGame();
         else if (gameState === 'paused') resumeGame();
       }
+      // Double-tap ArrowLeft / ArrowRight → barrel roll
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && gameState === 'playing' && barrelRoll === 0) {
+        const now = Date.now();
+        if (lastTapTime[e.key] && now - lastTapTime[e.key] < 300) {
+          barrelRoll        = 42;
+          barrelDir         = e.key === 'ArrowLeft' ? 1 : -1;
+          lastTapTime[e.key] = 0; // reset so triple-tap doesn't chain
+          barrelRollDone    = true;
+          checkAchievements();
+        } else {
+          lastTapTime[e.key] = now;
+        }
+      }
     }
     function setupTouchControls() {
       [['btnUp','ArrowUp'],['btnDown','ArrowDown'],['btnLeft','ArrowLeft'],['btnRight','ArrowRight']]
@@ -642,10 +1101,21 @@
       score = 0; ringsScored = 0; speed = startSpeed;
       distanceTraveled = 0; totalRings = 0;
       combo = 0; comboMax = 0;
+      ringSpawnCounter = 0;
       lives = zenMode ? Infinity : MAX_LIVES;
       invincible = false; invincibleFrames = 0;
       shakeFrames = 0;
+      barrelRoll = 0;
       plane.visible = true;
+      // Per-session achievement/milestone state
+      goldRingsCollected = 0; nearMissCount = 0; barrelRollDone = false;
+      sessionBadges = [];
+      _triggeredMilestones.clear();
+      _badgeQueue = []; _badgeShowing = false;
+      document.getElementById('badgePopup').classList.remove('show');
+      document.getElementById('milestonePopup').style.opacity = '0';
+      _burstParticles.forEach(p => { if (scene) scene.remove(p.mesh); });
+      _burstParticles = [];
       document.getElementById('comboPopup').style.opacity = '0';
     }
     function _showGameUI() {
@@ -655,21 +1125,21 @@
       document.getElementById('touchControls').style.display = 'block';
     }
 
-    function startGame()    { zenMode = false; _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); refreshHUD(); }
-    function startZenGame() { zenMode = true;  _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); refreshHUD(); }
+    function startGame()    { zenMode = false; _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); startBeat(); refreshHUD(); }
+    function startZenGame() { zenMode = true;  _resetState(); _showGameUI(); gameState = 'playing'; initAudio(); startEngineSound(); startBeat(); refreshHUD(); }
 
     function pauseGame() {
       gameState = 'paused';
       document.getElementById('pauseScreen').style.display = 'block';
-      stopEngineSound();
+      stopEngineSound(); stopBeat();
     }
     function resumeGame() {
       gameState = 'playing';
       document.getElementById('pauseScreen').style.display = 'none';
-      startEngineSound();
+      startEngineSound(); startBeat();
     }
     function exitToMenu() {
-      stopEngineSound();
+      stopEngineSound(); stopBeat();
       gameState = 'menu';
       zenMode   = false;
       document.getElementById('pauseScreen').style.display   = 'none';
@@ -691,7 +1161,7 @@
 
     function endGame() {
       gameState = 'gameover';
-      stopEngineSound();
+      stopEngineSound(); stopBeat();
       playGameOverSound();
       triggerShake(22, 0.8);
       plane.visible = true;
@@ -706,6 +1176,18 @@
       document.getElementById('finalCombo')   .textContent = comboMax + (comboMax >= 4 ? ' 🏆' : comboMax >= 2 ? ' 🔥' : '');
       document.getElementById('finalDist')    .textContent = formatDist(distanceTraveled);
       document.getElementById('finalBest')    .textContent = highScore;
+      // Session badges
+      const badgeEl = document.getElementById('goBadgesRow');
+      if (sessionBadges.length > 0) {
+        badgeEl.innerHTML =
+          '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.5;margin-bottom:5px;">Badges Earned</div>' +
+          '<div style="font-size:24px;letter-spacing:4px;">' +
+          sessionBadges.map(b => `<span title="${b.label}">${b.icon}</span>`).join('') + '</div>';
+      } else {
+        badgeEl.innerHTML = '';
+      }
+      // Clear any lingering milestone popup
+      document.getElementById('milestonePopup').style.opacity = '0';
       document.getElementById('gameOver').style.display = 'block';
     }
 
@@ -724,7 +1206,7 @@
       _resetTrailPts();
       gameState = 'playing';
       initAudio();
-      startEngineSound();
+      startEngineSound(); startBeat();
       refreshHUD();
     }
 
@@ -838,16 +1320,18 @@
       const cfg    = RING_SIZE[ringSize];
       const radius = cfg.minR + Math.random() * cfg.varR;
       const tube   = 0.35;
-      const moving = Math.random() < 0.35;
-      const bx     = Math.random() * 14 - 7;
-      const by     = Math.random() * 8  - 2;
-      const col    = moving ? 0x0099ff : 0xff3300;
-      const emiss  = moving ? 0x002244 : 0x220000;
-      const mat    = new THREE.MeshPhongMaterial({ color: col, emissive: emiss });
-      const ring   = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 36), mat);
+      const gold   = (ringSpawnCounter % 8 === 7) && speed >= 0.7; // every 8th ring is gold once speed is up
+      const moving = !gold && Math.random() < 0.35; // gold rings don't move
+      ringSpawnCounter++;
+      const bx    = Math.random() * 14 - 7;
+      const by    = Math.random() * 8  - 2;
+      const col   = gold ? 0xFFD700 : (moving ? 0x0099ff : 0xff3300);
+      const emiss = gold ? 0x332200 : (moving ? 0x002244 : 0x220000);
+      const mat   = new THREE.MeshPhongMaterial({ color: col, emissive: emiss, shininess: gold ? 90 : 30 });
+      const ring  = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 12, 36), mat);
       ring.position.set(bx, by, zPos);
       ring.userData = {
-        passed: false, radius, tube, moving,
+        passed: false, radius, tube, moving, gold,
         baseX: bx, baseY: by,
         oscAxis:  Math.random() < 0.5 ? 'x' : 'y',
         oscAmp:   1.5 + Math.random() * 2.5,
@@ -1050,11 +1534,25 @@
 
         plane.position.x = Math.max(-9, Math.min(9,  plane.position.x));
         plane.position.y = Math.max(-8, Math.min(10, plane.position.y));
-        plane.rotation.z = THREE.MathUtils.lerp(plane.rotation.z, targetBankZ, 0.12);
+
+        // Barrel roll takes over rotation.z for its duration
+        if (barrelRoll > 0) {
+          plane.rotation.z += (Math.PI * 2 / 42) * barrelDir;
+          barrelRoll--;
+          if (barrelRoll === 0) plane.rotation.z = targetBankZ; // snap to bank on exit
+        } else {
+          plane.rotation.z = THREE.MathUtils.lerp(plane.rotation.z, targetBankZ, 0.12);
+        }
         plane.rotation.x = THREE.MathUtils.lerp(plane.rotation.x, targetBankX, 0.12);
 
         plane.position.z += speed;
         distanceTraveled += speed;
+
+        // Day/night cycle
+        const _dnPhase = dayNightMode === 'day'   ? 0
+                       : dayNightMode === 'night'  ? 1
+                       : (1 - Math.cos(distanceTraveled * Math.PI / 1500)) / 2;
+        updateDayNight(_dnPhase);
 
         // Invincibility blink
         if (invincible) {
@@ -1115,6 +1613,9 @@
           }
         });
 
+        // Collision check runs first so invincible is set before near-miss is evaluated
+        checkCollisions();
+
         // Rings: oscillate, score, recycle
         const now = performance.now() / 1000;
         obstacles.forEach(ring => {
@@ -1143,13 +1644,34 @@
               ringsScored++;
               combo++;
               comboMax = Math.max(comboMax, combo);
-              const pts = Math.min(combo, 4);
-              score += pts;
-              ring.material.color.set(0x00ff88);
-              setTimeout(() => { ring.material.color.set(ring.userData.baseColor); }, 350);
-              if (ringsScored % 5 === 0) speed = Math.min(speed + 0.08, 3.0);
-              playRingSound(combo);
-              if (combo >= 2) showComboPopup(combo, false);
+
+              const nearMiss = dist2D > holeR * 0.8; // within 20% of the inner edge
+
+              if (ring.userData.gold) {
+                // Gold ring: flat 3 pts + slow speed escalation
+                score += 3;
+                speed  = Math.max(startSpeed, speed - 0.05);
+                ring.material.color.set(0xffffff);
+                setTimeout(() => { ring.material.color.set(ring.userData.baseColor); }, 450);
+                goldRingsCollected++;
+                playGoldSound();
+              } else {
+                const pts = Math.min(combo, 4);
+                score += pts;
+                ring.material.color.set(0x00ff88);
+                setTimeout(() => { ring.material.color.set(ring.userData.baseColor); }, 350);
+                if (ringsScored % 5 === 0) speed = Math.min(speed + 0.08, 3.0);
+                playRingSound(combo);
+                if (combo >= 2) showComboPopup(combo, false);
+              }
+
+              if (nearMiss && !invincible) {
+                score += 1;
+                nearMissCount++;
+                showNearMissPopup();
+                playNearMissSound();
+                triggerShake(4, 0.3);
+              }
             } else {
               // Went around
               if (combo >= 2) showComboPopup(0, true);
@@ -1159,21 +1681,34 @@
               playMissSound();
             }
             refreshHUD();
+            checkAchievements();
+            checkMilestones();
           }
 
           // Recycle ring
           if (ring.position.z < camera.position.z - 30) {
-            const sp  = RING_SPACING[ringSpacing];
-            const fZ  = obstacles.reduce((m, o) => Math.max(m, o.position.z), camera.position.z);
-            const bx  = Math.random() * 14 - 7;
-            const by  = Math.random() * 8  - 2;
+            const sp    = RING_SPACING[ringSpacing];
+            const fZ    = obstacles.reduce((m, o) => Math.max(m, o.position.z), camera.position.z);
+            const bx    = Math.random() * 14 - 7;
+            const by    = Math.random() * 8  - 2;
+            const gold   = (ringSpawnCounter % 8 === 7) && speed >= 0.7;
+            const moving = !gold && Math.random() < 0.35;
+            ringSpawnCounter++;
+            const col   = gold ? 0xFFD700 : (moving ? 0x0099ff : 0xff3300);
+            const emiss = gold ? 0x332200 : (moving ? 0x002244 : 0x220000);
+            ring.material.color.set(col);
+            ring.material.emissive.set(emiss);
+            ring.material.shininess = gold ? 90 : 30;
             ring.position.z = fZ + sp.base + Math.random() * sp.var;
             ring.position.x = bx;
             ring.position.y = by;
-            ring.userData.baseX  = bx;
-            ring.userData.baseY  = by;
-            ring.userData.oscPhase = Math.random() * Math.PI * 2;
-            ring.userData.passed = false;
+            ring.userData.gold      = gold;
+            ring.userData.moving    = moving;
+            ring.userData.baseColor = col;
+            ring.userData.baseX     = bx;
+            ring.userData.baseY     = by;
+            ring.userData.oscPhase  = Math.random() * Math.PI * 2;
+            ring.userData.passed    = false;
           }
         });
 
@@ -1206,8 +1741,16 @@
         // Live altitude in HUD
         document.getElementById('flightDisplay').textContent =
           'Alt: ' + Math.round(plane.position.y * 10 + 500) + ' m | ' + speed.toFixed(1) + '×';
+      }
 
-        checkCollisions();
+      // Burst particle update (runs regardless of game state until all expire)
+      for (let i = _burstParticles.length - 1; i >= 0; i--) {
+        const bp = _burstParticles[i];
+        const t  = 1 - bp.life / bp.maxLife;
+        bp.mesh.scale.setScalar(1 + t * 4.5);
+        bp.mesh.material.opacity = (1 - t) * 0.85;
+        bp.life--;
+        if (bp.life <= 0) { scene.remove(bp.mesh); _burstParticles.splice(i, 1); }
       }
 
       renderer.render(scene, camera);
