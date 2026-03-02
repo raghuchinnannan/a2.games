@@ -10,6 +10,15 @@
       "platforms": ["desktop", "mobile"]
     },
     {
+      "id": "car-dodger",
+      "name": "Car Dodger",
+      "description": "Dodge oncoming cars and keep driving!",
+      "image": "./images/hero-images/car-dodger.png",
+      "url": "./games/car-dodger.html",
+      "tags": ["action", "arcade"],
+      "platforms": ["desktop", "mobile"]
+    },
+    {
       "id": "memory-match",
       "name": "Memory Match",
       "description": "Test your memory with this fun matching game!",
@@ -214,15 +223,6 @@
       "image": "./images/hero-images/15-puzzle.png",
       "url": "./games/15-puzzle.html",
       "tags": ["puzzle", "classic"],
-      "platforms": ["desktop", "mobile"]
-    },
-    {
-      "id": "car-dodger",
-      "name": "Car Dodger",
-      "description": "Dodge oncoming cars and keep driving!",
-      "image": "./images/hero-images/car-dodger.png",
-      "url": "./games/car-dodger.html",
-      "tags": ["action", "arcade"],
       "platforms": ["desktop", "mobile"]
     },
     {
