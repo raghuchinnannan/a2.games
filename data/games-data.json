@@ -1,5 +1,14 @@
 {
   "games": [
+    {
+      "id": "block-drop",
+      "name": "Block Drop",
+      "description": "Pick a Tetris piece, place it on the board. Clear rows & columns to score big!",
+      "image": "./images/hero-images/block-drop.png",
+      "url": "./games/block-drop.html",
+      "tags": ["puzzle", "casual", "strategy"],
+      "platforms": ["desktop", "mobile"]
+    },
      {
       "id": "flight-simulator",
       "name": "3D Flight Simulator",

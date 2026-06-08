@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block Drop | a2.games</title>
+  <link rel="icon" type="image/x-icon" href="/images/favicons/block.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a1a;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 0 18px #7c3aed88);
+    }
+
+    #scoreboard {
+      display: flex;
+      gap: 30px;
+    }
+
+    .score-box {
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 10px 24px;
+      backdrop-filter: blur(8px);
+    }
+
+    .score-box .label {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .score-box .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #a78bfa;
+    }
+
+    #board-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 0 60px rgba(124,58,237,0.3), 0 0 0 1px rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+
+    #main-canvas {
+      cursor: pointer;
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: top left;
+    }
+
+    #piece-tray {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    @media (max-width: 500px) {
+      h1 { font-size: 1.5rem; letter-spacing: 2px; }
+      #scoreboard { gap: 8px; }
+      .score-box { padding: 8px 10px; }
+      .score-box .value { font-size: 1.2rem; }
+      .modal-box { padding: 32px 28px; }
+    }
+
+    .piece-slot {
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .piece-slot:hover:not(.used) {
+      border-color: rgba(167,139,250,0.5);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(124,58,237,0.3);
+    }
+
+    .piece-slot.selected {
+      border-color: #a78bfa;
+      box-shadow: 0 0 24px rgba(167,139,250,0.5);
+      transform: translateY(-4px);
+    }
+
+    .piece-slot.used {
+      opacity: 0.2;
+      cursor: default;
+    }
+
+    .piece-slot canvas {
+      display: block;
+    }
+
+    #hint {
+      font-size: 0.78rem;
+      color: #64748b;
+      letter-spacing: 1px;
+    }
+
+    /* Overlay */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(12px);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: rgba(20,20,40,0.97);
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 24px;
+      padding: 44px 56px;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(124,58,237,0.4);
+    }
+
+    .modal-box h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .modal-box p { color: #94a3b8; margin-bottom: 6px; font-size: 1rem; }
+    .modal-box .big { font-size: 1.8rem; font-weight: 700; color: #a78bfa; margin: 12px 0; }
+
+    .btn {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      border: none;
+      border-radius: 12px;
+      padding: 14px 40px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: transform 0.15s, box-shadow 0.2s;
+      margin-top: 16px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,58,237,0.5);
+    }
+
+    #clear-flash {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.5rem;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0;
+      text-shadow: 0 0 30px currentColor;
+      transition: opacity 0.1s;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div id="app">
+  <h1>BLOCK DROP</h1>
+
+  <div id="scoreboard">
+    <div class="score-box">
+      <div class="label">Score</div>
+      <div class="value" id="score-val">0</div>
+    </div>
+    <div class="score-box">
+      <div class="label">Best</div>
+      <div class="value" id="best-val">0</div>
+    </div>
+    <div class="score-box">
+      <div class="label">Lines</div>
+      <div class="value" id="lines-val">0</div>
+    </div>
+  </div>
+
+  <div id="board-wrapper"></div>
+
+  <div id="piece-tray"></div>
+  <div id="hint">Pick a piece · Click to place it on the board</div>
+</div>
+
+<div id="clear-flash"></div>
+
+<div id="overlay">
+  <div class="modal-box">
+    <h2 id="overlay-title">BLOCK DROP</h2>
+    <p id="overlay-sub">Fill rows or columns to clear them!</p>
+    <div class="big" id="overlay-score" style="display:none"></div>
+    <button class="btn" id="overlay-btn">PLAY</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const COLS = 10, ROWS = 10;
+const CELL = 44;            // px per cell on 2D canvas
+const GAP = 2;
+const BOARD_PX = COLS * CELL + (COLS + 1) * GAP;
+const TRAY_PIECE_SCALE = 0.7; // scale for tray previews
+const NUM_CHOICES = 3;
+
+// Piece colors (vibrant palette)
+const COLORS = [
+  { hex: '#f472b6', glow: '#ec4899' },  // pink
+  { hex: '#60a5fa', glow: '#3b82f6' },  // blue
+  { hex: '#34d399', glow: '#10b981' },  // green
+  { hex: '#fbbf24', glow: '#f59e0b' },  // amber
+  { hex: '#a78bfa', glow: '#7c3aed' },  // purple
+  { hex: '#fb923c', glow: '#ea580c' },  // orange
+  { hex: '#22d3ee', glow: '#06b6d4' },  // cyan
+  { hex: '#f87171', glow: '#ef4444' },  // red
+];
+
+// Per-color artistic patterns drawn inside each block
+const PATTERNS = [
+  // 0: Pink — polka dot grid
+  (ctx, x, y, sz) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    const dotR = sz * 0.085, step = sz * 0.33;
+    for (let dy = step * 0.5; dy < sz - 1; dy += step)
+      for (let dx = step * 0.5; dx < sz - 1; dx += step) {
+        ctx.beginPath(); ctx.arc(x + dx, y + dy, dotR, 0, Math.PI * 2); ctx.fill();
+      }
+  },
+  // 1: Blue — diamond outline
+  (ctx, x, y, sz) => {
+    const cx = x + sz / 2, cy = y + sz / 2, r = sz * 0.36;
+    ctx.strokeStyle = 'rgba(255,255,255,0.38)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+    ctx.closePath(); ctx.stroke();
+  },
+  // 2: Green — cross / plus
+  (ctx, x, y, sz) => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.34)'; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x + sz / 2, y + sz * 0.18); ctx.lineTo(x + sz / 2, y + sz * 0.82);
+    ctx.moveTo(x + sz * 0.18, y + sz / 2); ctx.lineTo(x + sz * 0.82, y + sz / 2);
+    ctx.stroke();
+  },
+  // 3: Amber — 4-pointed star
+  (ctx, x, y, sz) => {
+    const cx = x + sz / 2, cy = y + sz / 2, outer = sz * 0.38, inner = sz * 0.15;
+    ctx.fillStyle = 'rgba(255,255,255,0.34)';
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4 - Math.PI / 2;
+      const r = i % 2 === 0 ? outer : inner;
+      i === 0 ? ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r)
+              : ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.fill();
+  },
+  // 4: Purple — concentric squares
+  (ctx, x, y, sz) => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.2;
+    [0.15, 0.32].forEach(p => ctx.strokeRect(x + sz * p, y + sz * p, sz * (1 - p * 2), sz * (1 - p * 2)));
+  },
+  // 5: Orange — diagonal stripes
+  (ctx, x, y, sz) => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1.4;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, sz, sz); ctx.clip();
+    for (let d = -sz; d < sz * 2; d += sz * 0.3) {
+      ctx.beginPath();
+      ctx.moveTo(x + d, y); ctx.lineTo(x + d + sz, y + sz);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+  // 6: Cyan — four-dot cluster
+  (ctx, x, y, sz) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.34)';
+    [[0.3, 0.3],[0.7, 0.3],[0.3, 0.7],[0.7, 0.7]].forEach(([rx, ry]) => {
+      ctx.beginPath(); ctx.arc(x + sz * rx, y + sz * ry, sz * 0.1, 0, Math.PI * 2); ctx.fill();
+    });
+  },
+  // 7: Red — double arcs (yin-yang echo)
+  (ctx, x, y, sz) => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x + sz * 0.28, y + sz * 0.5, sz * 0.2, -Math.PI * 0.65, Math.PI * 0.65); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + sz * 0.72, y + sz * 0.5, sz * 0.2, Math.PI - Math.PI * 0.65, Math.PI + Math.PI * 0.65); ctx.stroke();
+  },
+];
+
+// All Tetris-style shapes (each cell is [row, col] relative to top-left)
+const SHAPES = [
+  [[0,0],[0,1],[0,2],[0,3]],           // I-H
+  [[0,0],[1,0],[2,0],[3,0]],           // I-V
+  [[0,0],[0,1],[1,0],[1,1]],           // O
+  [[0,0],[0,1],[0,2],[1,0]],           // L
+  [[0,0],[0,1],[0,2],[1,2]],           // J
+  [[0,0],[0,1],[1,1],[1,2]],           // S
+  [[0,1],[0,2],[1,0],[1,1]],           // Z
+  [[0,0],[0,1],[0,2],[1,1]],           // T
+  [[0,0],[1,0],[1,1],[2,1]],           // S-V
+  [[0,1],[1,0],[1,1],[2,0]],           // Z-V
+  [[0,0],[1,0],[2,0],[2,1]],           // L-V
+  [[0,1],[1,1],[2,0],[2,1]],           // J-V
+  [[0,0],[1,0],[1,1],[2,1]],           // T-alt
+  [[0,0],[0,1],[1,0]],                 // small-L
+  [[0,0],[1,0],[1,1]],                 // small-J
+  [[0,0],[0,1],[0,2]],                 // 3-H
+  [[0,0],[1,0],[2,0]],                 // 3-V
+  [[0,0],[0,1]],                       // domino-H
+  [[0,0],[1,0]],                       // domino-V
+  [[0,0]],                             // single
+  [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]], // 2x3
+  [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]], // 3x2
+];
+
+// ─── BACKGROUND PARTICLE FIELD (Three.js) ─────────────────────────────────
+const bgCanvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+camera.position.z = 40;
+
+// Floating particle cubes
+const particleGroup = new THREE.Group();
+scene.add(particleGroup);
+const cubeGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+
+function randColor() {
+  const c = COLORS[Math.floor(Math.random() * COLORS.length)];
+  return new THREE.Color(c.hex);
+}
+
+const NUM_PARTICLES = 60;
+const particles = [];
+for (let i = 0; i < NUM_PARTICLES; i++) {
+  const mat = new THREE.MeshStandardMaterial({
+    color: randColor(),
+    emissive: randColor(),
+    emissiveIntensity: 0.5,
+    transparent: true,
+    opacity: 0.18 + Math.random() * 0.22,
+    roughness: 0.3,
+  });
+  const mesh = new THREE.Mesh(cubeGeo, mat);
+  mesh.position.set(
+    (Math.random() - 0.5) * 80,
+    (Math.random() - 0.5) * 60,
+    (Math.random() - 0.5) * 30
+  );
+  mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
+  const speed = 0.002 + Math.random() * 0.004;
+  particles.push({ mesh, speed, axis: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize() });
+  particleGroup.add(mesh);
+}
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const pLight = new THREE.PointLight(0xa78bfa, 2, 100);
+pLight.position.set(0, 0, 20);
+scene.add(pLight);
+
+function resizeBg() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+let bgT = 0;
+function animateBg() {
+  requestAnimationFrame(animateBg);
+  bgT += 0.005;
+  particles.forEach(p => {
+    p.mesh.rotateOnAxis(p.axis, p.speed);
+    p.mesh.position.y += Math.sin(bgT + p.mesh.position.x * 0.1) * 0.01;
+  });
+  pLight.position.x = Math.sin(bgT * 0.4) * 15;
+  pLight.position.y = Math.cos(bgT * 0.3) * 10;
+  renderer.render(scene, camera);
+}
+animateBg();
+
+// ─── THREE.JS BLOCK RENDERER FOR MAIN BOARD ───────────────────────────────
+const blockScene = new THREE.Scene();
+const blockCamera = new THREE.OrthographicCamera(0, BOARD_PX, 0, -BOARD_PX, -100, 100);
+blockCamera.position.z = 50;
+
+const blockRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+blockRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+blockRenderer.setSize(BOARD_PX, BOARD_PX);
+blockRenderer.shadowMap.enabled = true;
+
+blockRenderer.domElement.id = 'main-canvas';
+blockRenderer.domElement.style.cursor = 'pointer';
+blockRenderer.domElement.style.display = 'block';
+document.getElementById('board-wrapper').appendChild(blockRenderer.domElement);
+
+const boardLight = new THREE.AmbientLight(0xffffff, 0.7);
+blockScene.add(boardLight);
+const boardDir = new THREE.DirectionalLight(0xffffff, 1.2);
+boardDir.position.set(BOARD_PX / 2, -BOARD_PX / 2, 80);
+blockScene.add(boardDir);
+
+// Background grid plane
+const gridMat = new THREE.MeshBasicMaterial({ color: 0x111128, transparent: true, opacity: 0.95 });
+const gridGeo = new THREE.PlaneGeometry(BOARD_PX, BOARD_PX);
+const gridPlane = new THREE.Mesh(gridGeo, gridMat);
+gridPlane.position.set(BOARD_PX / 2, -BOARD_PX / 2, -1);
+blockScene.add(gridPlane);
+
+// Grid lines
+function addGridLines() {
+  const mat = new THREE.LineBasicMaterial({ color: 0x1e1e3f, transparent: true, opacity: 0.5 });
+  for (let r = 0; r <= ROWS; r++) {
+    const y = -(r * CELL + r * GAP + GAP);
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(GAP, y, 0),
+      new THREE.Vector3(BOARD_PX - GAP, y, 0)
+    ]);
+    blockScene.add(new THREE.Line(geo, mat));
+  }
+  for (let c = 0; c <= COLS; c++) {
+    const x = c * CELL + c * GAP + GAP;
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x, -GAP, 0),
+      new THREE.Vector3(x, -(BOARD_PX - GAP), 0)
+    ]);
+    blockScene.add(new THREE.Line(geo, mat));
+  }
+}
+addGridLines();
+
+// Block mesh pool
+const blockMeshes = [];
+const blockGeo = new THREE.BoxGeometry(CELL - GAP * 2, CELL - GAP * 2, CELL * 0.5);
+
+// Cache textures per colorIdx so we don't recreate them each time
+const textureCache = {};
+
+function makeBlockTexture(colorIdx) {
+  if (textureCache[colorIdx]) return textureCache[colorIdx];
+  const sz = 128;
+  const cv = document.createElement('canvas');
+  cv.width = sz; cv.height = sz;
+  const ctx = cv.getContext('2d');
+  const c = COLORS[colorIdx];
+
+  // Slightly darkened base fill
+  ctx.fillStyle = c.hex;
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Top-left corner bevel highlight
+  const bevel = ctx.createLinearGradient(0, 0, sz * 0.6, sz * 0.6);
+  bevel.addColorStop(0, 'rgba(255,255,255,0.28)');
+  bevel.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = bevel;
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Bottom-right shadow bevel
+  const shadow = ctx.createLinearGradient(sz, sz, sz * 0.4, sz * 0.4);
+  shadow.addColorStop(0, 'rgba(0,0,0,0.22)');
+  shadow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shadow;
+  ctx.fillRect(0, 0, sz, sz);
+
+  // Artistic pattern at full block size
+  PATTERNS[colorIdx % PATTERNS.length](ctx, 0, 0, sz);
+
+  // Thin inner border
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(3, 3, sz - 6, sz - 6);
+
+  const tex = new THREE.CanvasTexture(cv);
+  textureCache[colorIdx] = tex;
+  return tex;
+}
+
+function makeBlockMesh(colorHex, glowHex, colorIdx) {
+  const tex = makeBlockTexture(colorIdx);
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex,
+    color: new THREE.Color(0xffffff),
+    emissive: new THREE.Color(glowHex),
+    emissiveIntensity: 0.3,
+    roughness: 0.28,
+    metalness: 0.55,
+  });
+  const mesh = new THREE.Mesh(blockGeo, mat);
+  mesh.castShadow = true;
+  return mesh;
+}
+
+function cellToPos(row, col) {
+  const x = col * (CELL + GAP) + GAP + CELL / 2;
+  const y = -(row * (CELL + GAP) + GAP + CELL / 2);
+  return [x, y];
+}
+
+// ─── GAME STATE ────────────────────────────────────────────────────────────
+let board = [];
+let boardMeshes = [];
+let score = 0;
+let best = parseInt(localStorage.getItem('blockdrop_best') || '0');
+let linesCleared = 0;
+let choices = [];
+let selectedChoice = -1;
+let hoverCell = null;
+let ghostMeshes = [];
+let animFrame;
+let boardScale = 1;
+
+// ─── RESPONSIVE SCALING ────────────────────────────────────────────────────
+function applyBoardScale() {
+  const hPad = 32;
+  const maxW = window.innerWidth - hPad;
+  boardScale = Math.min(1, maxW / BOARD_PX);
+
+  const canvas = blockRenderer.domElement;
+  canvas.style.transform = `scale(${boardScale})`;
+
+  const wrapper = document.getElementById('board-wrapper');
+  const scaledPx = Math.round(BOARD_PX * boardScale);
+  wrapper.style.width  = scaledPx + 'px';
+  wrapper.style.height = scaledPx + 'px';
+
+  document.getElementById('app').style.gap = boardScale < 0.85 ? '10px' : '18px';
+
+  if (choices.length) renderTray();
+}
+
+window.addEventListener('resize', applyBoardScale);
+
+function initBoard() {
+  board = Array.from({ length: ROWS }, () => Array(COLS).fill(-1));
+  boardMeshes = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  // Remove old meshes
+  blockMeshes.forEach(m => blockScene.remove(m));
+  blockMeshes.length = 0;
+}
+
+function randShape() {
+  return SHAPES[Math.floor(Math.random() * SHAPES.length)];
+}
+function randColorIdx() {
+  return Math.floor(Math.random() * COLORS.length);
+}
+
+function refreshChoices() {
+  choices = Array.from({ length: NUM_CHOICES }, () => ({
+    shape: randShape(),
+    colorIdx: randColorIdx(),
+    used: false,
+  }));
+  selectedChoice = -1;
+  renderTray();
+}
+
+// ─── 2D TRAY PREVIEW ──────────────────────────────────────────────────────
+const tray = document.getElementById('piece-tray');
+const trayCanvases = [];
+
+function renderTray() {
+  const scaledBoardPx = Math.round(BOARD_PX * boardScale);
+  const slotGap   = Math.max(8, Math.round(12 * boardScale));
+  const slotPad   = Math.max(6, Math.round(12 * boardScale));
+  const gap        = Math.max(1, Math.round(GAP * TRAY_PIECE_SCALE));
+
+  // Distribute available width evenly across 3 slots
+  const availPerSlot = Math.floor((scaledBoardPx - 2 * slotGap) / NUM_CHOICES) - slotPad * 2;
+  const szFull = Math.round(CELL * TRAY_PIECE_SCALE);
+
+  tray.style.gap = slotGap + 'px';
+  tray.innerHTML = '';
+  trayCanvases.length = 0;
+
+  choices.forEach((ch, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'piece-slot' + (i === selectedChoice ? ' selected' : '');
+    slot.style.padding = slotPad + 'px';
+
+    const maxR = Math.max(...ch.shape.map(c => c[0])) + 1;
+    const maxC = Math.max(...ch.shape.map(c => c[1])) + 1;
+
+    // Size each cell to fit within the slot width constraint
+    const szFromW = Math.floor((availPerSlot - (maxC + 1) * gap) / maxC);
+    const sz = Math.max(16, Math.min(szFull, szFromW));
+
+    const w = maxC * sz + (maxC + 1) * gap;
+    const h = maxR * sz + (maxR + 1) * gap;
+    const minSize = sz * 2;
+
+    const cv = document.createElement('canvas');
+    cv.width  = Math.max(w, minSize);
+    cv.height = Math.max(h, minSize);
+    const ctx = cv.getContext('2d');
+    const offX = (cv.width  - w) / 2;
+    const offY = (cv.height - h) / 2;
+
+    const c = COLORS[ch.colorIdx];
+    ch.shape.forEach(([r, col]) => {
+      const x = offX + col * (sz + gap) + gap;
+      const y = offY + r  * (sz + gap) + gap;
+      ctx.fillStyle = c.hex;
+      ctx.shadowColor = c.glow;
+      ctx.shadowBlur = 12;
+      roundRect(ctx, x, y, sz, sz, 4); ctx.fill();
+      ctx.shadowBlur = 0;
+      const shine = ctx.createLinearGradient(x, y, x, y + sz * 0.55);
+      shine.addColorStop(0, 'rgba(255,255,255,0.38)');
+      shine.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = shine;
+      roundRect(ctx, x, y, sz, sz * 0.55, 4); ctx.fill();
+      PATTERNS[ch.colorIdx % PATTERNS.length](ctx, x, y, sz);
+    });
+
+    trayCanvases.push(cv);
+    slot.appendChild(cv);
+    slot.addEventListener('click', () => selectChoice(i));
+    tray.appendChild(slot);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function selectChoice(i) {
+  selectedChoice = i;
+  renderTray();
+}
+
+// ─── BOARD RENDERING (Three.js) ────────────────────────────────────────────
+function placeMesh(row, col, colorIdx, animated) {
+  if (boardMeshes[row][col]) {
+    blockScene.remove(boardMeshes[row][col]);
+    const idx = blockMeshes.indexOf(boardMeshes[row][col]);
+    if (idx !== -1) blockMeshes.splice(idx, 1);
+  }
+  const c = COLORS[colorIdx];
+  const mesh = makeBlockMesh(c.hex, c.glow, colorIdx);
+  const [x, y] = cellToPos(row, col);
+  mesh.position.set(x, y, 0);
+  if (animated) {
+    mesh.scale.set(0.1, 0.1, 0.1);
+    mesh.userData.animScale = true;
+  }
+  blockScene.add(mesh);
+  blockMeshes.push(mesh);
+  boardMeshes[row][col] = mesh;
+}
+
+function removeMesh(row, col) {
+  if (!boardMeshes[row][col]) return;
+  const mesh = boardMeshes[row][col];
+  mesh.userData.animRemove = true;
+  boardMeshes[row][col] = null;
+}
+
+function clearGhost() {
+  ghostMeshes.forEach(m => blockScene.remove(m));
+  ghostMeshes = [];
+}
+
+function showGhost(row, col) {
+  clearGhost();
+  if (selectedChoice < 0 || choices[selectedChoice].used) return;
+  const ch = choices[selectedChoice];
+  const c = COLORS[ch.colorIdx];
+  const valid = canPlace(ch.shape, row, col);
+
+  ch.shape.forEach(([dr, dc]) => {
+    const r = row + dr, cc = col + dc;
+    if (r < 0 || r >= ROWS || cc < 0 || cc >= COLS) return;
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(c.hex),
+      emissive: new THREE.Color(c.glow),
+      emissiveIntensity: valid ? 0.6 : 0.1,
+      transparent: true,
+      opacity: valid ? 0.55 : 0.2,
+      roughness: 0.3,
+    });
+    const mesh = new THREE.Mesh(blockGeo, mat);
+    const [x, y] = cellToPos(r, cc);
+    mesh.position.set(x, y, 2);
+    blockScene.add(mesh);
+    ghostMeshes.push(mesh);
+  });
+}
+
+// ─── GAME LOGIC ────────────────────────────────────────────────────────────
+function canPlace(shape, row, col) {
+  return shape.every(([dr, dc]) => {
+    const r = row + dr, c = col + dc;
+    return r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === -1;
+  });
+}
+
+function placePiece(shape, row, col, colorIdx) {
+  shape.forEach(([dr, dc]) => {
+    const r = row + dr, c = col + dc;
+    board[r][c] = colorIdx;
+    placeMesh(r, c, colorIdx, true);
+  });
+}
+
+function checkLines() {
+  const fullRows = [], fullCols = [];
+  for (let r = 0; r < ROWS; r++) {
+    if (board[r].every(v => v !== -1)) fullRows.push(r);
+  }
+  for (let c = 0; c < COLS; c++) {
+    if (board.every(row => row[c] !== -1)) fullCols.push(c);
+  }
+  const total = fullRows.length + fullCols.length;
+  if (total === 0) return 0;
+
+  const cleared = new Set();
+  fullRows.forEach(r => {
+    for (let c = 0; c < COLS; c++) cleared.add(`${r},${c}`);
+  });
+  fullCols.forEach(c => {
+    for (let r = 0; r < ROWS; r++) cleared.add(`${r},${c}`);
+  });
+
+  cleared.forEach(key => {
+    const [r, c] = key.split(',').map(Number);
+    board[r][c] = -1;
+    removeMesh(r, c);
+  });
+
+  flashClear(fullRows.length, fullCols.length);
+  return total;
+}
+
+function flashClear(rows, cols) {
+  const el = document.getElementById('clear-flash');
+  const combo = rows + cols;
+  let msg = '';
+  if (combo >= 4) msg = '🔥 MEGA CLEAR!';
+  else if (combo === 3) msg = '✨ TRIPLE!';
+  else if (combo === 2) msg = '⚡ DOUBLE!';
+  else msg = rows > 0 ? '💥 ROW CLEAR!' : '💥 COL CLEAR!';
+
+  const colors = ['#f472b6','#60a5fa','#34d399','#fbbf24','#a78bfa'];
+  el.style.color = colors[combo % colors.length];
+  el.textContent = msg;
+  el.style.opacity = '1';
+  el.style.fontSize = (2 + combo * 0.3) + 'rem';
+  setTimeout(() => { el.style.opacity = '0'; }, 900);
+}
+
+function addScore(lines) {
+  const base = [0, 100, 250, 500, 900, 1500];
+  const pts = (base[Math.min(lines, 5)] || 1500 + (lines - 5) * 300);
+  score += pts;
+  linesCleared += lines;
+  if (score > best) {
+    best = score;
+    localStorage.setItem('blockdrop_best', best);
+  }
+  updateScoreUI();
+  // Animate score
+  const sv = document.getElementById('score-val');
+  sv.style.transform = 'scale(1.4)';
+  sv.style.color = '#34d399';
+  setTimeout(() => { sv.style.transform = ''; sv.style.color = ''; }, 250);
+}
+
+function updateScoreUI() {
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('best-val').textContent = best;
+  document.getElementById('lines-val').textContent = linesCleared;
+}
+
+function isGameOver() {
+  return choices.every(ch => !anyValidPlacement(ch.shape));
+}
+
+function anyValidPlacement(shape) {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (canPlace(shape, r, c)) return true;
+    }
+  }
+  return false;
+}
+
+// ─── INPUT HANDLING ────────────────────────────────────────────────────────
+function canvasToCell(evt) {
+  const rect = blockRenderer.domElement.getBoundingClientRect();
+  const scaleX = BOARD_PX / rect.width;
+  const scaleY = BOARD_PX / rect.height;
+  const px = (evt.clientX - rect.left) * scaleX;
+  const py = (evt.clientY - rect.top) * scaleY;
+  const col = Math.floor((px - GAP) / (CELL + GAP));
+  const row = Math.floor((py - GAP) / (CELL + GAP));
+  return { row, col };
+}
+
+blockRenderer.domElement.addEventListener('mousemove', evt => {
+  const { row, col } = canvasToCell(evt);
+  if (!hoverCell || hoverCell.row !== row || hoverCell.col !== col) {
+    hoverCell = { row, col };
+    showGhost(row, col);
+  }
+});
+
+blockRenderer.domElement.addEventListener('mouseleave', () => {
+  hoverCell = null;
+  clearGhost();
+});
+
+blockRenderer.domElement.addEventListener('click', evt => {
+  if (selectedChoice < 0) return;
+  const ch = choices[selectedChoice];
+  if (ch.used) return;
+  const { row, col } = canvasToCell(evt);
+  if (!canPlace(ch.shape, row, col)) return;
+
+  placePiece(ch.shape, row, col, ch.colorIdx);
+
+  const lines = checkLines();
+  if (lines > 0) addScore(lines);
+
+  // Base score per block placed
+  score += ch.shape.length * 5;
+  if (score > best) { best = score; localStorage.setItem('blockdrop_best', best); }
+  updateScoreUI();
+
+  clearGhost();
+
+  // Always generate 3 fresh choices after placing one piece
+  refreshChoices();
+  if (isGameOver()) setTimeout(gameOver, 400);
+});
+
+// Touch support
+blockRenderer.domElement.addEventListener('touchend', evt => {
+  evt.preventDefault();
+  const t = evt.changedTouches[0];
+  const fakeEvt = { clientX: t.clientX, clientY: t.clientY };
+  if (selectedChoice < 0) return;
+  const ch = choices[selectedChoice];
+  if (ch.used) return;
+  const { row, col } = canvasToCell(fakeEvt);
+  if (!canPlace(ch.shape, row, col)) return;
+  blockRenderer.domElement.dispatchEvent(new MouseEvent('click', { clientX: t.clientX, clientY: t.clientY }));
+}, { passive: false });
+
+blockRenderer.domElement.addEventListener('touchmove', evt => {
+  evt.preventDefault();
+  const t = evt.touches[0];
+  const fakeEvt = { clientX: t.clientX, clientY: t.clientY };
+  const { row, col } = canvasToCell(fakeEvt);
+  if (!hoverCell || hoverCell.row !== row || hoverCell.col !== col) {
+    hoverCell = { row, col };
+    showGhost(row, col);
+  }
+}, { passive: false });
+
+// ─── ANIMATION LOOP ────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  animFrame = requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  // Animate block spawns and removals
+  for (let i = blockMeshes.length - 1; i >= 0; i--) {
+    const m = blockMeshes[i];
+    if (m.userData.animScale) {
+      m.scale.x = Math.min(1, m.scale.x + dt * 8);
+      m.scale.y = Math.min(1, m.scale.y + dt * 8);
+      m.scale.z = Math.min(1, m.scale.z + dt * 8);
+      if (m.scale.x >= 1) delete m.userData.animScale;
+    }
+    if (m.userData.animRemove) {
+      m.scale.x = Math.max(0, m.scale.x - dt * 10);
+      m.scale.y = Math.max(0, m.scale.y - dt * 10);
+      m.scale.z = Math.max(0, m.scale.z - dt * 10);
+      if (m.scale.x <= 0) {
+        blockScene.remove(m);
+        blockMeshes.splice(i, 1);
+      }
+    }
+  }
+
+  // Gently pulse ghost
+  ghostMeshes.forEach(m => {
+    m.material.opacity = 0.35 + Math.sin(Date.now() * 0.005) * 0.2;
+  });
+
+  blockRenderer.render(blockScene, blockCamera);
+}
+
+// ─── GAME FLOW ────────────────────────────────────────────────────────────
+function startGame() {
+  score = 0; linesCleared = 0;
+  updateScoreUI();
+  initBoard();
+  choices = Array.from({ length: NUM_CHOICES }, () => ({
+    shape: randShape(), colorIdx: randColorIdx(), used: false
+  }));
+  selectedChoice = -1;
+  applyBoardScale();
+  hideOverlay();
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animate();
+}
+
+function gameOver() {
+  document.getElementById('overlay-title').textContent = 'GAME OVER';
+  document.getElementById('overlay-sub').textContent = 'No more pieces can be placed!';
+  const os = document.getElementById('overlay-score');
+  os.style.display = 'block';
+  os.textContent = `Score: ${score}`;
+  document.getElementById('overlay-btn').textContent = 'PLAY AGAIN';
+  showOverlay();
+}
+
+function showOverlay() {
+  document.getElementById('overlay').classList.add('active');
+}
+function hideOverlay() {
+  document.getElementById('overlay').classList.remove('active');
+}
+
+document.getElementById('overlay-btn').addEventListener('click', startGame);
+
+// ─── START ─────────────────────────────────────────────────────────────────
+document.getElementById('best-val').textContent = best;
+document.getElementById('overlay-title').textContent = 'BLOCK DROP';
+document.getElementById('overlay-sub').textContent = 'Pick a piece · Fill rows & columns to clear them!';
+document.getElementById('overlay-score').style.display = 'none';
+document.getElementById('overlay-btn').textContent = 'PLAY';
+
+// Touch-friendly hint
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+document.getElementById('hint').textContent = isTouch
+  ? 'Pick a piece · Tap the board to place it'
+  : 'Pick a piece · Click to place it on the board';
+
+applyBoardScale();
+showOverlay();
+</script>
+</body>
+</html>
