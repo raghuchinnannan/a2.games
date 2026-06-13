@@ -113,9 +113,25 @@
       border: 2px solid rgba(255,255,255,0.08);
       border-radius: 16px;
       padding: 12px;
-      cursor: pointer;
+      cursor: grab;
+      touch-action: none;
       transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
       position: relative;
+    }
+
+    .piece-slot:active { cursor: grabbing; }
+
+    #drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 200;
+      display: none;
+      border-radius: 12px;
+      border: 2px solid rgba(167,139,250,0.85);
+      box-shadow: 0 0 28px rgba(124,58,237,0.7), 0 8px 32px rgba(0,0,0,0.5);
+      background: rgba(20,20,40,0.92);
+      padding: 8px;
+      backdrop-filter: blur(4px);
     }
 
     .piece-slot:hover:not(.used) {
@@ -366,7 +382,6 @@ const SHAPES = [
   [[0,1],[1,0],[1,1],[2,0]],           // Z-V
   [[0,0],[1,0],[2,0],[2,1]],           // L-V
   [[0,1],[1,1],[2,0],[2,1]],           // J-V
-  [[0,0],[1,0],[1,1],[2,1]],           // T-alt
   [[0,0],[0,1],[1,0]],                 // small-L
   [[0,0],[1,0],[1,1]],                 // small-J
   [[0,0],[0,1],[0,2]],                 // 3-H
@@ -451,8 +466,14 @@ animateBg();
 
 // ─── THREE.JS BLOCK RENDERER FOR MAIN BOARD ───────────────────────────────
 const blockScene = new THREE.Scene();
-const blockCamera = new THREE.OrthographicCamera(0, BOARD_PX, 0, -BOARD_PX, -100, 100);
-blockCamera.position.z = 50;
+const blockCamera = new THREE.OrthographicCamera(0, BOARD_PX, 0, -BOARD_PX, -300, 300);
+blockCamera.position.z = 80;
+
+// Tilt the board slightly to show block tops and sides
+const SCENE_TILT = 12 * Math.PI / 180;
+const boardGroup = new THREE.Group();
+boardGroup.rotation.x = -SCENE_TILT;
+blockScene.add(boardGroup);
 
 const blockRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 blockRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -464,18 +485,36 @@ blockRenderer.domElement.style.cursor = 'pointer';
 blockRenderer.domElement.style.display = 'block';
 document.getElementById('board-wrapper').appendChild(blockRenderer.domElement);
 
-const boardLight = new THREE.AmbientLight(0xffffff, 0.7);
+const boardLight = new THREE.AmbientLight(0xffffff, 0.45);
 blockScene.add(boardLight);
-const boardDir = new THREE.DirectionalLight(0xffffff, 1.2);
-boardDir.position.set(BOARD_PX / 2, -BOARD_PX / 2, 80);
+
+// Key light — top-left front, hits block faces and tops
+const boardDir = new THREE.DirectionalLight(0xffffff, 1.8);
+boardDir.position.set(-0.8, 1.6, 2);
 blockScene.add(boardDir);
+
+// Rim light — opposite side, adds colour depth on block edges
+const boardRim = new THREE.DirectionalLight(0x7c3aed, 1.1);
+boardRim.position.set(1.5, -0.8, 0.4);
+blockScene.add(boardRim);
+
+// Subtle blue fill from below
+const boardFill = new THREE.DirectionalLight(0x3b82f6, 0.5);
+boardFill.position.set(0, -1.5, 0.8);
+blockScene.add(boardFill);
+
+// Two orbiting accent point lights (positions set in animate())
+const accentLight1 = new THREE.PointLight(0xa78bfa, 5, 900);
+const accentLight2 = new THREE.PointLight(0x34d399, 4, 700);
+blockScene.add(accentLight1);
+blockScene.add(accentLight2);
 
 // Background grid plane
 const gridMat = new THREE.MeshBasicMaterial({ color: 0x111128, transparent: true, opacity: 0.95 });
 const gridGeo = new THREE.PlaneGeometry(BOARD_PX, BOARD_PX);
 const gridPlane = new THREE.Mesh(gridGeo, gridMat);
 gridPlane.position.set(BOARD_PX / 2, -BOARD_PX / 2, -1);
-blockScene.add(gridPlane);
+boardGroup.add(gridPlane);
 
 // Grid lines
 function addGridLines() {
@@ -486,7 +525,7 @@ function addGridLines() {
       new THREE.Vector3(GAP, y, 0),
       new THREE.Vector3(BOARD_PX - GAP, y, 0)
     ]);
-    blockScene.add(new THREE.Line(geo, mat));
+    boardGroup.add(new THREE.Line(geo, mat));
   }
   for (let c = 0; c <= COLS; c++) {
     const x = c * CELL + c * GAP + GAP;
@@ -494,14 +533,14 @@ function addGridLines() {
       new THREE.Vector3(x, -GAP, 0),
       new THREE.Vector3(x, -(BOARD_PX - GAP), 0)
     ]);
-    blockScene.add(new THREE.Line(geo, mat));
+    boardGroup.add(new THREE.Line(geo, mat));
   }
 }
 addGridLines();
 
 // Block mesh pool
 const blockMeshes = [];
-const blockGeo = new THREE.BoxGeometry(CELL - GAP * 2, CELL - GAP * 2, CELL * 0.5);
+const blockGeo = new THREE.BoxGeometry(CELL - GAP * 2, CELL - GAP * 2, CELL * 1.0);
 
 // Cache textures per colorIdx so we don't recreate them each time
 const textureCache = {};
@@ -551,9 +590,9 @@ function makeBlockMesh(colorHex, glowHex, colorIdx) {
     map: tex,
     color: new THREE.Color(0xffffff),
     emissive: new THREE.Color(glowHex),
-    emissiveIntensity: 0.3,
-    roughness: 0.28,
-    metalness: 0.55,
+    emissiveIntensity: 0.22,
+    roughness: 0.15,
+    metalness: 0.75,
   });
   const mesh = new THREE.Mesh(blockGeo, mat);
   mesh.castShadow = true;
@@ -604,7 +643,7 @@ function initBoard() {
   board = Array.from({ length: ROWS }, () => Array(COLS).fill(-1));
   boardMeshes = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
   // Remove old meshes
-  blockMeshes.forEach(m => blockScene.remove(m));
+  blockMeshes.forEach(m => boardGroup.remove(m));
   blockMeshes.length = 0;
 }
 
@@ -616,11 +655,13 @@ function randColorIdx() {
 }
 
 function refreshChoices() {
-  choices = Array.from({ length: NUM_CHOICES }, () => ({
-    shape: randShape(),
-    colorIdx: randColorIdx(),
-    used: false,
-  }));
+  const taken = new Set();
+  choices = Array.from({ length: NUM_CHOICES }, () => {
+    let idx;
+    do { idx = Math.floor(Math.random() * SHAPES.length); } while (taken.has(idx));
+    taken.add(idx);
+    return { shape: SHAPES[idx], colorIdx: randColorIdx(), used: false };
+  });
   selectedChoice = -1;
   renderTray();
 }
@@ -685,7 +726,16 @@ function renderTray() {
 
     trayCanvases.push(cv);
     slot.appendChild(cv);
-    slot.addEventListener('click', () => selectChoice(i));
+    slot.addEventListener('mousedown', e => {
+      dragStartX = e.clientX; dragStartY = e.clientY;
+      dragChoiceIdx = i; dragIsTouch = false;
+      buildDragGhost(i);
+    });
+    slot.addEventListener('touchstart', e => startTouchDrag(e, i), { passive: false });
+    slot.addEventListener('click', () => {
+      if (dragSuppressClick) { dragSuppressClick = false; return; }
+      selectChoice(i);
+    });
     tray.appendChild(slot);
   });
 }
@@ -712,7 +762,7 @@ function selectChoice(i) {
 // ─── BOARD RENDERING (Three.js) ────────────────────────────────────────────
 function placeMesh(row, col, colorIdx, animated) {
   if (boardMeshes[row][col]) {
-    blockScene.remove(boardMeshes[row][col]);
+    boardGroup.remove(boardMeshes[row][col]);
     const idx = blockMeshes.indexOf(boardMeshes[row][col]);
     if (idx !== -1) blockMeshes.splice(idx, 1);
   }
@@ -721,10 +771,11 @@ function placeMesh(row, col, colorIdx, animated) {
   const [x, y] = cellToPos(row, col);
   mesh.position.set(x, y, 0);
   if (animated) {
-    mesh.scale.set(0.1, 0.1, 0.1);
-    mesh.userData.animScale = true;
+    mesh.scale.setScalar(0.05);
+    mesh.position.z = 16;
+    mesh.userData.animIn = 0;
   }
-  blockScene.add(mesh);
+  boardGroup.add(mesh);
   blockMeshes.push(mesh);
   boardMeshes[row][col] = mesh;
 }
@@ -737,7 +788,7 @@ function removeMesh(row, col) {
 }
 
 function clearGhost() {
-  ghostMeshes.forEach(m => blockScene.remove(m));
+  ghostMeshes.forEach(m => boardGroup.remove(m));
   ghostMeshes = [];
 }
 
@@ -752,17 +803,18 @@ function showGhost(row, col) {
     const r = row + dr, cc = col + dc;
     if (r < 0 || r >= ROWS || cc < 0 || cc >= COLS) return;
     const mat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(c.hex),
-      emissive: new THREE.Color(c.glow),
-      emissiveIntensity: valid ? 0.6 : 0.1,
+      color:            valid ? new THREE.Color(c.hex)  : new THREE.Color(0xff2244),
+      emissive:         valid ? new THREE.Color(c.glow) : new THREE.Color(0xff0000),
+      emissiveIntensity: valid ? 0.6 : 0.9,
       transparent: true,
-      opacity: valid ? 0.55 : 0.2,
+      opacity: valid ? 0.55 : 0.65,
       roughness: 0.3,
     });
     const mesh = new THREE.Mesh(blockGeo, mat);
     const [x, y] = cellToPos(r, cc);
     mesh.position.set(x, y, 2);
-    blockScene.add(mesh);
+    if (!valid) mesh.userData.invalidGhost = true;
+    boardGroup.add(mesh);
     ghostMeshes.push(mesh);
   });
 }
@@ -871,7 +923,8 @@ function canvasToCell(evt) {
   const scaleX = BOARD_PX / rect.width;
   const scaleY = BOARD_PX / rect.height;
   const px = (evt.clientX - rect.left) * scaleX;
-  const py = (evt.clientY - rect.top) * scaleY;
+  // Divide by cos(tilt) to undo the vertical compression the 12° board tilt creates
+  const py = (evt.clientY - rect.top) * scaleY / Math.cos(SCENE_TILT);
   const col = Math.floor((px - GAP) / (CELL + GAP));
   const row = Math.floor((py - GAP) / (CELL + GAP));
   return { row, col };
@@ -938,37 +991,220 @@ blockRenderer.domElement.addEventListener('touchmove', evt => {
   }
 }, { passive: false });
 
+// ─── DRAG AND DROP ─────────────────────────────────────────────────────────
+const dragGhostEl = document.createElement('div');
+dragGhostEl.id = 'drag-ghost';
+document.body.appendChild(dragGhostEl);
+
+let dragChoiceIdx = -1;
+let isDragging = false;
+let dragSuppressClick = false;
+let dragStartX = 0, dragStartY = 0;
+let dragIsTouch = false;
+const DRAG_THRESHOLD = 8;
+
+function buildDragGhost(choiceIdx) {
+  const ch = choices[choiceIdx];
+  const sz = 28, gap = 2;
+  const maxR = Math.max(...ch.shape.map(s => s[0])) + 1;
+  const maxC = Math.max(...ch.shape.map(s => s[1])) + 1;
+  const w = maxC * (sz + gap) + gap;
+  const h = maxR * (sz + gap) + gap;
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  const c = COLORS[ch.colorIdx];
+  ch.shape.forEach(([r, col]) => {
+    const x = col * (sz + gap) + gap;
+    const y = r   * (sz + gap) + gap;
+    ctx.fillStyle = c.hex;
+    ctx.shadowColor = c.glow; ctx.shadowBlur = 10;
+    roundRect(ctx, x, y, sz, sz, 4); ctx.fill();
+    ctx.shadowBlur = 0;
+    const shine = ctx.createLinearGradient(x, y, x, y + sz * 0.55);
+    shine.addColorStop(0, 'rgba(255,255,255,0.38)');
+    shine.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shine;
+    roundRect(ctx, x, y, sz, sz * 0.55, 4); ctx.fill();
+    PATTERNS[ch.colorIdx % PATTERNS.length](ctx, x, y, sz);
+  });
+  dragGhostEl.innerHTML = '';
+  dragGhostEl.appendChild(cv);
+}
+
+function moveDragGhost(clientX, clientY) {
+  const el = dragGhostEl;
+  const offsetY = dragIsTouch ? -(el.offsetHeight + 24) : -el.offsetHeight / 2;
+  el.style.left = (clientX - el.offsetWidth / 2) + 'px';
+  el.style.top  = (clientY + offsetY) + 'px';
+}
+
+function tryDropOnBoard(clientX, clientY) {
+  const rect = blockRenderer.domElement.getBoundingClientRect();
+  if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+  const ch = choices[dragChoiceIdx];
+  const { row, col } = canvasToCell({ clientX, clientY });
+  if (!canPlace(ch.shape, row, col)) return;
+  selectedChoice = dragChoiceIdx;
+  placePiece(ch.shape, row, col, ch.colorIdx);
+  const lines = checkLines();
+  if (lines > 0) addScore(lines);
+  score += ch.shape.length * 5;
+  if (score > best) { best = score; localStorage.setItem('blockdrop_best', best); }
+  updateScoreUI();
+  clearGhost();
+  refreshChoices();
+  if (isGameOver()) setTimeout(gameOver, 400);
+}
+
+function endDragState() {
+  dragGhostEl.style.display = 'none';
+  dragChoiceIdx = -1;
+  isDragging = false;
+  dragIsTouch = false;
+}
+
+function startTouchDrag(e, choiceIdx) {
+  e.preventDefault();
+  const t = e.touches[0];
+  dragChoiceIdx = choiceIdx;
+  dragIsTouch = true;
+  dragStartX = t.clientX;
+  dragStartY = t.clientY;
+  isDragging = false;
+  buildDragGhost(choiceIdx);
+}
+
+document.addEventListener('mousemove', e => {
+  if (dragChoiceIdx < 0) return;
+  const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+  if (!isDragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+    isDragging = true;
+    dragGhostEl.style.display = 'block';
+    selectedChoice = dragChoiceIdx;
+    renderTray();
+  }
+  if (!isDragging) return;
+  moveDragGhost(e.clientX, e.clientY);
+  const rect = blockRenderer.domElement.getBoundingClientRect();
+  if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+    const { row, col } = canvasToCell(e);
+    if (!hoverCell || hoverCell.row !== row || hoverCell.col !== col) {
+      hoverCell = { row, col };
+      showGhost(row, col);
+    }
+  } else {
+    clearGhost(); hoverCell = null;
+  }
+});
+
+document.addEventListener('mouseup', e => {
+  if (dragChoiceIdx < 0) return;
+  if (isDragging) {
+    dragSuppressClick = true;
+    tryDropOnBoard(e.clientX, e.clientY);
+    clearGhost();
+  }
+  endDragState();
+});
+
+document.addEventListener('touchmove', e => {
+  if (dragChoiceIdx < 0) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const dx = t.clientX - dragStartX, dy = t.clientY - dragStartY;
+  if (!isDragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+    isDragging = true;
+    dragGhostEl.style.display = 'block';
+    selectedChoice = dragChoiceIdx;
+    renderTray();
+  }
+  if (!isDragging) return;
+  moveDragGhost(t.clientX, t.clientY);
+  const rect = blockRenderer.domElement.getBoundingClientRect();
+  if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom) {
+    const { row, col } = canvasToCell({ clientX: t.clientX, clientY: t.clientY });
+    if (!hoverCell || hoverCell.row !== row || hoverCell.col !== col) {
+      hoverCell = { row, col };
+      showGhost(row, col);
+    }
+  } else {
+    clearGhost(); hoverCell = null;
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (dragChoiceIdx < 0) return;
+  if (isDragging) {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    tryDropOnBoard(t.clientX, t.clientY);
+    clearGhost();
+  }
+  endDragState();
+}, { passive: false });
+
 // ─── ANIMATION LOOP ────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
 function animate() {
   animFrame = requestAnimationFrame(animate);
   const dt = clock.getDelta();
+  const now = Date.now();
 
-  // Animate block spawns and removals
+  // Block animations
   for (let i = blockMeshes.length - 1; i >= 0; i--) {
     const m = blockMeshes[i];
-    if (m.userData.animScale) {
-      m.scale.x = Math.min(1, m.scale.x + dt * 8);
-      m.scale.y = Math.min(1, m.scale.y + dt * 8);
-      m.scale.z = Math.min(1, m.scale.z + dt * 8);
-      if (m.scale.x >= 1) delete m.userData.animScale;
+
+    // Pop-in: drop from above with overshoot bounce
+    if (m.userData.animIn !== undefined) {
+      m.userData.animIn = Math.min(1, m.userData.animIn + dt * 7);
+      const p = m.userData.animIn;
+      const s = p < 0.75
+        ? p / 0.75                                                   // ease in 0→1
+        : 1 + Math.sin((p - 0.75) / 0.25 * Math.PI) * 0.18;        // overshoot bounce
+      m.scale.setScalar(Math.max(0.01, s));
+      m.position.z = (1 - p) * 16;
+      if (p >= 1) { m.scale.setScalar(1); m.position.z = 0; delete m.userData.animIn; }
     }
+
+    // Clear: brief emissive flash then fly up and shrink
     if (m.userData.animRemove) {
-      m.scale.x = Math.max(0, m.scale.x - dt * 10);
-      m.scale.y = Math.max(0, m.scale.y - dt * 10);
-      m.scale.z = Math.max(0, m.scale.z - dt * 10);
-      if (m.scale.x <= 0) {
-        blockScene.remove(m);
-        blockMeshes.splice(i, 1);
+      m.userData.animRT = (m.userData.animRT || 0) + dt * 4.5;
+      const t = Math.min(m.userData.animRT, 1);
+      if (t < 0.3) {
+        m.material.emissiveIntensity = 2.5 * (1 - t / 0.3);
       }
+      m.position.z = t * 22;
+      m.scale.setScalar(1 - t * 0.95);
+      if (t >= 1) { boardGroup.remove(m); blockMeshes.splice(i, 1); }
     }
   }
 
-  // Gently pulse ghost
+  // Ghost: float up/down in Z; invalid pulses red faster
   ghostMeshes.forEach(m => {
-    m.material.opacity = 0.35 + Math.sin(Date.now() * 0.005) * 0.2;
+    if (m.userData.invalidGhost) {
+      m.material.opacity           = 0.5  + Math.sin(now * 0.014) * 0.22;
+      m.material.emissiveIntensity = 0.85 + Math.sin(now * 0.014) * 0.3;
+      m.position.z = 2 + Math.sin(now * 0.012) * 1.5;
+    } else {
+      m.material.opacity = 0.35 + Math.sin(now * 0.005) * 0.2;
+      m.position.z = 2 + Math.sin(now * 0.004) * 3.5;
+    }
   });
+
+  // Orbit two accent point lights around the board
+  const lt = now * 0.0007;
+  accentLight1.position.set(
+    BOARD_PX / 2 + Math.cos(lt)          * BOARD_PX * 1.0,
+    -BOARD_PX / 2 + Math.sin(lt * 0.7)  * BOARD_PX * 0.5,
+    140
+  );
+  accentLight2.position.set(
+    BOARD_PX / 2 + Math.cos(lt + Math.PI) * BOARD_PX * 0.8,
+    -BOARD_PX / 2 + Math.sin(lt * 0.5 + Math.PI) * BOARD_PX * 0.6,
+    100
+  );
 
   blockRenderer.render(blockScene, blockCamera);
 }
@@ -978,10 +1214,7 @@ function startGame() {
   score = 0; linesCleared = 0;
   updateScoreUI();
   initBoard();
-  choices = Array.from({ length: NUM_CHOICES }, () => ({
-    shape: randShape(), colorIdx: randColorIdx(), used: false
-  }));
-  selectedChoice = -1;
+  refreshChoices();
   applyBoardScale();
   hideOverlay();
   if (animFrame) cancelAnimationFrame(animFrame);
@@ -1017,8 +1250,8 @@ document.getElementById('overlay-btn').textContent = 'PLAY';
 // Touch-friendly hint
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 document.getElementById('hint').textContent = isTouch
-  ? 'Pick a piece · Tap the board to place it'
-  : 'Pick a piece · Click to place it on the board';
+  ? 'Drag a piece onto the board · or tap to select, then tap'
+  : 'Drag a piece to the board · or click to select, then click';
 
 applyBoardScale();
 showOverlay();
