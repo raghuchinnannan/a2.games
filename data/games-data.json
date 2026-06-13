@@ -278,6 +278,15 @@
       "url": "./games/ball-sort-puzzle.html",
       "tags": ["puzzle", "casual", "logic"],
       "platforms": ["desktop", "mobile"]
+    },
+    {
+      "id": "bubble-shooter",
+      "name": "Bubble Shooter",
+      "description": "Aim and shoot vibrant 3D bubbles! Match 3 or more to pop them and clear the board.",
+      "image": "./images/hero-images/bubble-shooter.png",
+      "url": "./games/bubble-shooter.html",
+      "tags": ["arcade", "casual", "puzzle"],
+      "platforms": ["desktop", "mobile"]
     }
   ]
 }

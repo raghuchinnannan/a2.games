@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Shooter | a2.games</title>
+  <link rel="icon" type="image/x-icon" href="/images/favicons/bubble.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: radial-gradient(ellipse at 50% 30%, #1a0533 0%, #07040f 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    #gameContainer {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 80px rgba(130,60,255,0.45), 0 24px 64px rgba(0,0,0,0.85);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    #gameContainer canvas { display: block; cursor: crosshair; }
+
+    #ui {
+      position: absolute; top: 18px; left: 20px;
+      color: white; font-size: 17px; font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      z-index: 10; pointer-events: none;
+    }
+    #ui div { margin-bottom: 6px; }
+
+    #levelDisplay {
+      position: absolute; top: 18px; right: 20px;
+      color: white; font-size: 17px; font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      z-index: 10; pointer-events: none;
+    }
+
+    .modal {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(8, 4, 22, 0.97);
+      padding: 40px 48px; border-radius: 22px;
+      text-align: center; color: white;
+      z-index: 100;
+      border: 1px solid rgba(167,139,250,0.35);
+      box-shadow: 0 0 60px rgba(120,40,255,0.35);
+      min-width: 380px;
+    }
+    .modal h2 {
+      font-size: 32px; margin-bottom: 18px; font-weight: 800;
+      background: linear-gradient(90deg, #f472b6, #a78bfa, #60a5fa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .modal p { color: #94a3b8; margin: 7px 0; font-size: 15px; line-height: 1.7; }
+    .modal .big { font-size: 22px; color: #e2e8f0; margin: 14px 0; }
+    .modal button {
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: white; border: none;
+      padding: 13px 38px; font-size: 16px;
+      border-radius: 12px; cursor: pointer; margin: 10px;
+      font-weight: 700; letter-spacing: 0.5px;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .modal button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,58,237,0.5);
+    }
+    .hidden { display: none; }
+
+    #nextPanel {
+      position: absolute; bottom: 20px; right: 20px;
+      background: rgba(255,255,255,0.05);
+      padding: 12px 16px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      text-align: center; z-index: 10;
+    }
+    #nextPanel p {
+      color: #64748b; font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    #nextBubbleCanvas { display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div id="gameContainer">
+  <div id="ui">
+    <div>Score: <span id="score">0</span></div>
+    <div>Shots: <span id="shots">0</span></div>
+  </div>
+  <div id="levelDisplay">Level: <span id="level">1</span></div>
+
+  <div id="nextPanel">
+    <p>Next</p>
+    <canvas id="nextBubbleCanvas" width="46" height="46"></canvas>
+  </div>
+
+  <div id="startModal" class="modal">
+    <h2>Bubble Shooter</h2>
+    <p>🖱️ Move mouse to aim · click to shoot</p>
+    <p>🎨 Match 3+ bubbles of the same colour</p>
+    <p>💥 Chain reactions score big</p>
+    <p>⭐ Clear the board to advance</p>
+    <p>⚠️ Don't let bubbles reach the bottom!</p>
+    <button onclick="game.start()">Play</button>
+  </div>
+
+  <div id="gameOverModal" class="modal hidden">
+    <h2>Game Over</h2>
+    <p class="big">Score: <span id="finalScore">0</span></p>
+    <p>Level reached: <span id="finalLevel">1</span></p>
+    <button onclick="game.restart()">Play Again</button>
+  </div>
+
+  <div id="levelCompleteModal" class="modal hidden">
+    <h2>Level Clear! 🎉</h2>
+    <p class="big">Score: <span id="levelScore">0</span></p>
+    <p>Accuracy bonus: +<span id="bonus">0</span></p>
+    <button onclick="game.nextLevel()">Next Level</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── COLOUR PALETTE ──────────────────────────────────────────────────────────
+// 7 vivid, maximally distinct colours — no similar neighbours
+const PALETTE = [
+  { id: 'pink',   hex: '#FF0080', emissive: '#990040', label: 'Pink'   },
+  { id: 'blue',   hex: '#0088FF', emissive: '#004499', label: 'Blue'   },
+  { id: 'green',  hex: '#00EE44', emissive: '#007722', label: 'Green'  },
+  { id: 'orange', hex: '#FF5500', emissive: '#882800', label: 'Orange' },
+  { id: 'purple', hex: '#CC00FF', emissive: '#770099', label: 'Purple' },
+  { id: 'cyan',   hex: '#00DDFF', emissive: '#007799', label: 'Cyan'   },
+  { id: 'yellow', hex: '#FFD700', emissive: '#997700', label: 'Yellow' },
+];
+
+function paletteById(id) { return PALETTE.find(c => c.id === id) || PALETTE[0]; }
+
+// ── THREE.JS RENDERER ───────────────────────────────────────────────────────
+const W = 480, H = 700;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById('gameContainer').prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07040f);
+
+// Ortho camera: top=0 (y=0 at screen-top), bottom=H (y=H at screen-bottom)
+// Formula: NDC_y = 1 - 2*y/H → y=0 → top, y=H → bottom ✓
+const camera = new THREE.OrthographicCamera(0, W, 0, H, -600, 600);
+camera.position.set(0, 0, 100);
+camera.lookAt(0, 0, 0);
+
+// ── LIGHTING ────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+// Key light: upper-left, warm white
+const keyLight = new THREE.DirectionalLight(0xfff4ee, 2.2);
+keyLight.position.set(-0.7, -1.8, 2);
+scene.add(keyLight);
+
+// Rim light: right side, cold blue
+const rimLight = new THREE.DirectionalLight(0x4499ff, 1.0);
+rimLight.position.set(1.5, 0.3, 0.6);
+scene.add(rimLight);
+
+// Bottom fill: slightly warm
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+fillLight.position.set(0, 1.5, 0.8);
+scene.add(fillLight);
+
+// Two orbiting accent point lights
+const accent1 = new THREE.PointLight(0xaa44ff, 4, 700);
+const accent2 = new THREE.PointLight(0x0099ff, 3, 600);
+scene.add(accent1, accent2);
+
+// ── SHARED GEOMETRY & MATERIAL CACHE ────────────────────────────────────────
+const RADIUS = 20;
+const sphereGeo = new THREE.SphereGeometry(RADIUS - 1, 40, 40);
+const matCache = {};
+
+function getSphereMat(paletteEntry) {
+  if (matCache[paletteEntry.id]) return matCache[paletteEntry.id];
+  const mat = new THREE.MeshStandardMaterial({
+    color:            new THREE.Color(paletteEntry.hex),
+    emissive:         new THREE.Color(paletteEntry.emissive),
+    emissiveIntensity: 0.25,
+    roughness: 0.06,
+    metalness: 0.08,
+  });
+  matCache[paletteEntry.id] = mat;
+  return mat;
+}
+
+// Ghost (invalid/valid) material for aim preview on current bubble
+const ghostMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff, emissive: 0xffffff,
+  emissiveIntensity: 0.1, roughness: 0.2, metalness: 0.05,
+  transparent: true, opacity: 0.3,
+});
+
+// ── CEILING BAR ─────────────────────────────────────────────────────────────
+const ceilMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(W, 6, 6),
+  new THREE.MeshStandardMaterial({ color: 0x2d1b69, emissive: 0x7c3aed, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 })
+);
+ceilMesh.position.set(W / 2, 50, 0);
+scene.add(ceilMesh);
+
+// ── BACKGROUND FLOATING PARTICLES ───────────────────────────────────────────
+const microGeo = new THREE.SphereGeometry(2.5, 8, 8);
+const bgParticles = [];
+for (let i = 0; i < 35; i++) {
+  const p = PALETTE[i % PALETTE.length];
+  const mesh = new THREE.Mesh(microGeo, new THREE.MeshBasicMaterial({
+    color: new THREE.Color(p.hex), transparent: true,
+    opacity: 0.12 + Math.random() * 0.12,
+  }));
+  mesh.position.set(Math.random() * W, Math.random() * H, -25 - Math.random() * 40);
+  mesh.userData.vy = 0.25 + Math.random() * 0.35;
+  mesh.userData.phase = Math.random() * Math.PI * 2;
+  scene.add(mesh);
+  bgParticles.push(mesh);
+}
+
+// ── SHOOTER MESH ─────────────────────────────────────────────────────────────
+const shooterMat = new THREE.MeshStandardMaterial({
+  color: 0x1e1b4b, emissive: 0x4338ca, emissiveIntensity: 0.4,
+  metalness: 0.92, roughness: 0.1,
+});
+const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(26, 30, 10, 28), shooterMat);
+baseMesh.rotation.x = Math.PI / 2;
+scene.add(baseMesh);
+
+const barrelMesh = new THREE.Mesh(new THREE.CylinderGeometry(6, 8, 36, 14), shooterMat);
+scene.add(barrelMesh);
+
+// ── AIM LINE ────────────────────────────────────────────────────────────────
+const aimPositions = new Float32Array(6);
+const aimGeo = new THREE.BufferGeometry();
+aimGeo.setAttribute('position', new THREE.BufferAttribute(aimPositions, 3));
+const aimLine = new THREE.Line(aimGeo, new THREE.LineBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.35,
+}));
+aimLine.visible = false;
+scene.add(aimLine);
+
+// ── NEXT BUBBLE PREVIEW (tiny 2D canvas) ─────────────────────────────────────
+const previewCanvas = document.getElementById('nextBubbleCanvas');
+const previewCtx = previewCanvas.getContext('2d');
+function drawPreview(entry) {
+  previewCtx.clearRect(0, 0, 46, 46);
+  const cx = 23, cy = 23, r = 19;
+  const g = previewCtx.createRadialGradient(cx - 6, cy - 6, 3, cx, cy, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.95)');
+  g.addColorStop(0.25, entry.hex);
+  g.addColorStop(1, entry.emissive);
+  previewCtx.fillStyle = g;
+  previewCtx.beginPath();
+  previewCtx.arc(cx, cy, r, 0, Math.PI * 2);
+  previewCtx.fill();
+  previewCtx.fillStyle = 'rgba(255,255,255,0.65)';
+  previewCtx.beginPath();
+  previewCtx.arc(cx - 7, cy - 7, 5, 0, Math.PI * 2);
+  previewCtx.fill();
+}
+
+// ── BUBBLE MESH POOL ─────────────────────────────────────────────────────────
+const bubbleMeshMap = new Map(); // bubble obj → THREE.Mesh
+let currentBubbleMesh = null;
+
+function makeBubbleMesh(entry, z = 0) {
+  const mesh = new THREE.Mesh(sphereGeo, getSphereMat(entry));
+  mesh.position.z = z;
+  scene.add(mesh);
+  return mesh;
+}
+
+function removeBubbleMesh(bubble) {
+  const mesh = bubbleMeshMap.get(bubble);
+  if (mesh) { scene.remove(mesh); bubbleMeshMap.delete(bubble); }
+}
+
+// ── GAME OBJECT ──────────────────────────────────────────────────────────────
+const game = {
+  width: W, height: H,
+  bubbleRadius: RADIUS,
+  score: 0, level: 1, shots: 0,
+  isRunning: false,
+  bubbles: [],
+  shooter: null,
+  nextBubble: null,
+  currentBubble: null,
+  aimAngle: -Math.PI / 2,
+  cols: 11,   // 11 cols × 40px = 440px fits W=480
+
+  start() {
+    document.getElementById('startModal').classList.add('hidden');
+    this.isRunning = true;
+    this.generateLevel();
+    this.gameLoop();
+  },
+
+  generateLevel() {
+    // Clear all bubble meshes
+    for (const m of bubbleMeshMap.values()) scene.remove(m);
+    bubbleMeshMap.clear();
+    if (currentBubbleMesh) { scene.remove(currentBubbleMesh); currentBubbleMesh = null; }
+
+    this.bubbles = [];
+    const numRows = Math.min(5 + Math.floor(this.level / 2), 12);
+    const avail = PALETTE.slice(0, Math.min(4 + Math.floor(this.level / 3), PALETTE.length));
+    const R = this.bubbleRadius;
+
+    for (let row = 0; row < numRows; row++) {
+      const offset = row % 2 === 1 ? R : 0;
+      const colsInRow = row % 2 === 1 ? this.cols - 1 : this.cols;
+      for (let col = 0; col < colsInRow; col++) {
+        if (Math.random() < 0.15) continue;
+        const x = col * R * 2 + R + offset;
+        const y = row * R * 2 + R + 52;
+        const entry = avail[Math.floor(Math.random() * avail.length)];
+        const bubble = { x, y, color: entry.id, row, col };
+        this.bubbles.push(bubble);
+        const mesh = makeBubbleMesh(entry);
+        mesh.position.set(x, y, 0);
+        bubbleMeshMap.set(bubble, mesh);
+      }
+    }
+
+    this.shooter = { x: W / 2, y: H - 48 };
+    baseMesh.position.set(this.shooter.x, this.shooter.y, -15);
+
+    this.currentBubble = this.createBubble();
+    this.nextBubble    = this.createBubble();
+
+    currentBubbleMesh = makeBubbleMesh(paletteById(this.currentBubble.color), 10);
+    currentBubbleMesh.position.set(this.currentBubble.x, this.currentBubble.y, 10);
+
+    drawPreview(paletteById(this.nextBubble.color));
+    document.getElementById('level').textContent = this.level;
+  },
+
+  createBubble() {
+    const inPlay = [...new Set(this.bubbles.map(b => b.color))];
+    const id = inPlay.length
+      ? inPlay[Math.floor(Math.random() * inPlay.length)]
+      : PALETTE[Math.floor(Math.random() * PALETTE.length)].id;
+    return { x: this.shooter.x, y: this.shooter.y, color: id, velX: 0, velY: 0, active: false };
+  },
+
+  update() {
+    if (!this.isRunning) return;
+    const cb = this.currentBubble;
+
+    if (cb.active) {
+      cb.x += cb.velX;
+      cb.y += cb.velY;
+
+      // Wall bounce
+      if (cb.x - this.bubbleRadius <= 0 || cb.x + this.bubbleRadius >= this.width) {
+        cb.velX *= -1;
+        cb.x = Math.max(this.bubbleRadius, Math.min(this.width - this.bubbleRadius, cb.x));
+      }
+
+      // Collision with ceiling or existing bubbles
+      let hit = cb.y - this.bubbleRadius <= 52;
+      if (!hit) {
+        for (const b of this.bubbles) {
+          const dx = cb.x - b.x, dy = cb.y - b.y;
+          if (dx * dx + dy * dy < (this.bubbleRadius * 2) ** 2) { hit = true; break; }
+        }
+      }
+
+      if (hit) {
+        this.snapBubble();
+        this.checkMatches();
+        this.removeFloating();
+        this.recolorIfEliminated();
+
+        if (!this.bubbles.length) {
+          this.completeLevel();
+        } else if (this.checkGameOver()) {
+          this.gameOver();
+        } else {
+          if (currentBubbleMesh) { scene.remove(currentBubbleMesh); currentBubbleMesh = null; }
+          this.currentBubble = this.nextBubble;
+          this.currentBubble.x = this.shooter.x;
+          this.currentBubble.y = this.shooter.y;
+          this.currentBubble.active = false;
+          currentBubbleMesh = makeBubbleMesh(paletteById(this.currentBubble.color), 10);
+          currentBubbleMesh.position.set(this.currentBubble.x, this.currentBubble.y, 10);
+          this.nextBubble = this.createBubble();
+          drawPreview(paletteById(this.nextBubble.color));
+        }
+      }
+    }
+  },
+
+  snapBubble() {
+    const R = this.bubbleRadius, cb = this.currentBubble;
+    let row = Math.round((cb.y - 52 - R) / (R * 2));
+    row = Math.max(0, row);
+    const offset = row % 2 === 1 ? R : 0;
+    let col = Math.round((cb.x - R - offset) / (R * 2));
+    col = Math.max(0, Math.min(this.cols - 1, col));
+
+    const sx = col * R * 2 + R + offset;
+    const sy = row * R * 2 + R + 52;
+    const bubble = { x: sx, y: sy, color: cb.color, row, col };
+    this.bubbles.push(bubble);
+
+    // Reuse current bubble mesh, snap to grid position
+    if (currentBubbleMesh) {
+      currentBubbleMesh.position.set(sx, sy, 0);
+      bubbleMeshMap.set(bubble, currentBubbleMesh);
+      currentBubbleMesh = null;
+    }
+  },
+
+  checkMatches() {
+    const newB = this.bubbles[this.bubbles.length - 1];
+    const matches = [], visited = new Set();
+    const flood = (b) => {
+      const k = `${b.x},${b.y}`;
+      if (visited.has(k)) return;
+      visited.add(k); matches.push(b);
+      for (const o of this.bubbles) {
+        if (o.color === b.color && !visited.has(`${o.x},${o.y}`)) {
+          const dx = b.x - o.x, dy = b.y - o.y;
+          if (dx * dx + dy * dy < (this.bubbleRadius * 2.5) ** 2) flood(o);
+        }
+      }
+    };
+    flood(newB);
+    if (matches.length >= 3) {
+      matches.forEach(b => removeBubbleMesh(b));
+      this.bubbles = this.bubbles.filter(b => !matches.includes(b));
+      this.score += matches.length * 10;
+      document.getElementById('score').textContent = this.score;
+    }
+  },
+
+  removeFloating() {
+    const connected = new Set(), queue = [];
+    this.bubbles.forEach(b => { if (b.y <= 52 + this.bubbleRadius * 2) { connected.add(b); queue.push(b); } });
+    while (queue.length) {
+      const cur = queue.pop();
+      this.bubbles.forEach(b => {
+        if (!connected.has(b)) {
+          const dx = cur.x - b.x, dy = cur.y - b.y;
+          if (dx * dx + dy * dy < (this.bubbleRadius * 2.5) ** 2) { connected.add(b); queue.push(b); }
+        }
+      });
+    }
+    const floating = this.bubbles.filter(b => !connected.has(b));
+    if (floating.length) {
+      floating.forEach(b => removeBubbleMesh(b));
+      this.bubbles = this.bubbles.filter(b => connected.has(b));
+      this.score += floating.length * 20;
+      document.getElementById('score').textContent = this.score;
+    }
+  },
+
+  // After any removal, recolor pending bubbles whose color no longer exists on the board
+  recolorIfEliminated() {
+    const inPlay = new Set(this.bubbles.map(b => b.color));
+    if (!inPlay.size) return; // board cleared — level complete handled elsewhere
+    const ids = [...inPlay];
+    const pick = () => ids[Math.floor(Math.random() * ids.length)];
+
+    if (this.nextBubble && !inPlay.has(this.nextBubble.color)) {
+      this.nextBubble.color = pick();
+      drawPreview(paletteById(this.nextBubble.color));
+    }
+
+    // Also recolor currentBubble in case it's still sitting at the shooter
+    // (not yet snapped — only relevant if it wasn't the shot that just landed)
+    if (this.currentBubble && !this.currentBubble.active && !inPlay.has(this.currentBubble.color)) {
+      this.currentBubble.color = pick();
+      if (currentBubbleMesh) {
+        currentBubbleMesh.material = getSphereMat(paletteById(this.currentBubble.color));
+      }
+    }
+  },
+
+  checkGameOver() {
+    return this.bubbles.some(b => b.y + this.bubbleRadius >= this.height - 95);
+  },
+
+  shoot() {
+    if (!this.currentBubble.active && this.isRunning) {
+      const spd = 13;
+      this.currentBubble.velX = Math.cos(this.aimAngle) * spd;
+      this.currentBubble.velY = Math.sin(this.aimAngle) * spd;
+      this.currentBubble.active = true;
+      this.shots++;
+      document.getElementById('shots').textContent = this.shots;
+    }
+  },
+
+  completeLevel() {
+    this.isRunning = false;
+    const bonus = Math.max(0, 1000 - this.shots * 10);
+    this.score += bonus;
+    document.getElementById('levelScore').textContent = this.score;
+    document.getElementById('bonus').textContent = bonus;
+    document.getElementById('levelCompleteModal').classList.remove('hidden');
+  },
+
+  nextLevel() {
+    document.getElementById('levelCompleteModal').classList.add('hidden');
+    this.level++; this.shots = 0;
+    document.getElementById('shots').textContent = 0;
+    this.generateLevel(); this.isRunning = true;
+  },
+
+  gameOver() {
+    this.isRunning = false;
+    document.getElementById('finalScore').textContent = this.score;
+    document.getElementById('finalLevel').textContent = this.level;
+    document.getElementById('gameOverModal').classList.remove('hidden');
+  },
+
+  restart() {
+    document.getElementById('gameOverModal').classList.add('hidden');
+    this.score = 0; this.level = 1; this.shots = 0;
+    document.getElementById('score').textContent = 0;
+    document.getElementById('shots').textContent = 0;
+    this.generateLevel(); this.isRunning = true;
+  },
+
+  draw() {
+    const now = Date.now();
+
+    // Move current bubble mesh (z=10 keeps it in front of the shooter base at z=-15)
+    if (currentBubbleMesh) {
+      currentBubbleMesh.position.set(this.currentBubble.x, this.currentBubble.y, 10);
+    }
+
+    // Aim line
+    if (!this.currentBubble.active && this.isRunning) {
+      const len = 130;
+      const ex = this.shooter.x + Math.cos(this.aimAngle) * len;
+      const ey = this.shooter.y + Math.sin(this.aimAngle) * len;
+      aimPositions[0] = this.shooter.x; aimPositions[1] = this.shooter.y; aimPositions[2] = 5;
+      aimPositions[3] = ex;             aimPositions[4] = ey;             aimPositions[5] = 5;
+      aimGeo.attributes.position.needsUpdate = true;
+      aimLine.visible = true;
+    } else {
+      aimLine.visible = false;
+    }
+
+    // Shooter barrel rotation: barrel CylinderGeometry points along Y; aim up = -PI/2
+    const bLen = 28;
+    barrelMesh.position.set(
+      this.shooter.x + Math.cos(this.aimAngle) * bLen / 2,
+      this.shooter.y + Math.sin(this.aimAngle) * bLen / 2,
+      2
+    );
+    barrelMesh.rotation.z = this.aimAngle + Math.PI / 2;
+
+    // Gentle bubble pulse: emissive intensity breathes
+    const pulse = 0.18 + Math.sin(now * 0.002) * 0.08;
+    for (const [, mesh] of bubbleMeshMap) {
+      mesh.material.emissiveIntensity = pulse;
+    }
+
+    // Background particles drift upward
+    const t = now * 0.001;
+    bgParticles.forEach(p => {
+      p.position.y -= p.userData.vy;
+      if (p.position.y < -10) p.position.y = H + 10;
+      p.position.x += Math.sin(t * 0.5 + p.userData.phase) * 0.4;
+    });
+
+    // Orbit accent lights
+    accent1.position.set(
+      W / 2 + Math.cos(t * 0.4)              * W * 0.9, H / 2 + Math.sin(t * 0.3)         * H * 0.5, 180
+    );
+    accent2.position.set(
+      W / 2 + Math.cos(t * 0.4 + Math.PI) * W * 0.7, H / 2 + Math.sin(t * 0.25 + Math.PI) * H * 0.6, 140
+    );
+
+    renderer.render(scene, camera);
+  },
+
+  gameLoop() {
+    this.update();
+    this.draw();
+    requestAnimationFrame(() => this.gameLoop());
+  },
+};
+
+// ── INPUT ────────────────────────────────────────────────────────────────────
+const cvs = renderer.domElement;
+
+function updateAim(clientX, clientY) {
+  const rect = cvs.getBoundingClientRect();
+  const mx = (clientX - rect.left) * (W / rect.width);
+  const my = (clientY - rect.top)  * (H / rect.height);
+  if (!game.currentBubble || game.currentBubble.active || !game.isRunning) return;
+  let a = Math.atan2(my - game.shooter.y, mx - game.shooter.x);
+  a = Math.max(-Math.PI + 0.08, Math.min(-0.08, a));
+  game.aimAngle = a;
+}
+
+cvs.addEventListener('mousemove', e => updateAim(e.clientX, e.clientY));
+cvs.addEventListener('click',     () => { if (game.isRunning) game.shoot(); });
+
+cvs.addEventListener('touchmove', e => {
+  e.preventDefault();
+  updateAim(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: false });
+
+cvs.addEventListener('touchend', e => {
+  e.preventDefault();
+  updateAim(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  if (game.isRunning) game.shoot();
+}, { passive: false });
+</script>
+</body>
+</html>
