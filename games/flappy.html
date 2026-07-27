@@ -1,153 +1,469 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <script src="https://unpkg.com/kaboom@3000.0.1/dist/kaboom.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flappy Bean | a2.games</title>
+    <link rel="icon" type="image/x-icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            overflow: hidden;
+            background: radial-gradient(1200px 600px at 50% 0%, #2a4a7a, #0e1627 60%, #0b0f1b 100%);
+            font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background: radial-gradient(1200px 600px at 50% 0%, #2a4a7a, #0e1627 60%, #0b0f1b 100%);
+            z-index: 10;
+            transition: opacity 0.35s ease;
+        }
+
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            border-top-color: #8db7ff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+            color: #cfe0ff;
+            font-weight: 500;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 
 <body>
-    <script type="module">
+    <div id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Flappy Bean…</div>
+    </div>
 
-        // import kaboom.js
+    <script type="module">
         import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
 
         const FLOOR_HEIGHT = 48;
-        const JUMP_FORCE = 750;
-        const SPEED = 480;
-        var isDouble = 0;
+        const JUMP_FORCE    = 750;
+        const BASE_SPEED    = 280;
+        const PIPE_WIDTH    = 80;
+        const PIPE_CAP_H    = 24;
+        const GAP_HEIGHT    = 220;
 
-        // initialize context
-        kaboom({
-            background: [141, 183, 255],
-        });
+        kaboom({ background: [141, 183, 255] });
 
-        // load assets
         loadSprite("bean", "https://zerohero.pages.dev/sprites/bean-head.png");
 
-        loadSprite("bean-head", "https://zerohero.pages.dev/sprites/bean-head.png");
+        (function waitForLoad() {
+            if (loadProgress() >= 1) {
+                document.getElementById("loading").classList.add("hidden");
+            } else {
+                requestAnimationFrame(waitForLoad);
+            }
+        })();
 
+        // Prevent space-bar from scrolling the page while playing
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") e.preventDefault();
+        });
 
+        // ─── Responsive text sizing helper ────────────────────────────────────
+        // Scales UI text relative to canvas width so it never overflows a
+        // narrow phone screen nor looks tiny on a large desktop window.
+        function fitText(scaleOfWidth, minSize, maxSize) {
+            return Math.round(Math.min(maxSize, Math.max(minSize, width() * scaleOfWidth)));
+        }
 
-        scene("game", () => {
+        // Soft translucent rounded panel used behind text for contrast
+        function panel(cx, cy, w, h) {
+            return add([
+                rect(w, h, { radius: 14 }),
+                pos(cx, cy),
+                anchor("center"),
+                color(10, 14, 26),
+                opacity(0.38),
+                z(9),
+            ]);
+        }
 
-            // define gravity
-            setGravity(2000);
+        // Layered sky so the background has some depth beyond a flat fill
+        function addSky() {
+            add([
+                rect(width(), height() * 0.6),
+                pos(0, 0),
+                color(168, 210, 255),
+                opacity(0.6),
+                z(-2),
+            ]);
+            add([
+                rect(width(), height() * 0.35),
+                pos(0, height() * 0.55),
+                color(110, 165, 235),
+                opacity(0.5),
+                z(-1),
+            ]);
+        }
 
-            // add a game object to screen
-            const player = add([
-                // list of components
+        // ─── Start Scene ───────────────────────────────────────────────────────
+
+        scene("start", () => {
+            addSky();
+
+            const titleSize = fitText(0.11, 32, 64);
+            const promptSize = fitText(0.045, 16, 24);
+
+            const bean = add([
                 sprite("bean"),
-                pos(100, 40),
-                area(),
-                body(),
+                pos(width() / 2, height() / 2 - 110),
+                scale(1.5),
+                anchor("center"),
             ]);
 
-            const game = add([
-                timer(),
-            ])
+            let t = 0;
+            bean.onUpdate(() => {
+                t += dt();
+                bean.pos.y = height() / 2 - 110 + Math.sin(t * 3) * 8;
+            });
 
-            // floor
+            add([
+                text("Flappy Bean", { size: titleSize, width: width() * 0.9, align: "center" }),
+                pos(width() / 2, height() / 2 - 10),
+                anchor("center"),
+                color(255, 255, 255),
+                z(10),
+            ]);
+
+            panel(width() / 2, height() / 2 + 70, Math.min(width() * 0.8, 340), promptSize + 26);
+
+            const prompt = add([
+                text("Press Space or Tap to Play", { size: promptSize, width: width() * 0.85, align: "center" }),
+                pos(width() / 2, height() / 2 + 70),
+                anchor("center"),
+                color(255, 255, 255),
+                z(10),
+            ]);
+
+            loop(0.6, () => { prompt.hidden = !prompt.hidden; });
+
+            onKeyPress("space", () => go("game"));
+            onClick(() => go("game"));
+        });
+
+        // ─── Game Scene ────────────────────────────────────────────────────────
+
+        scene("game", () => {
+            setGravity(2000);
+
+            let score    = 0;
+            let gameOver = false;
+
+            addSky();
+
+            // ── Parallax clouds ──────────────────────────────────────────────
+            function spawnCloud() {
+                const h = rand(30, 65);
+                add([
+                    rect(rand(80, 210), h, { radius: h / 2 }),
+                    pos(width() + 50, rand(20, height() / 2 - 60)),
+                    color(255, 255, 255),
+                    opacity(0.75),
+                    move(LEFT, BASE_SPEED * 0.25),
+                    offscreen({ destroy: true }),
+                    z(0),
+                ]);
+                wait(rand(2, 5), spawnCloud);
+            }
+            spawnCloud();
+
+            // ── Floor ────────────────────────────────────────────────────────
             add([
                 rect(width(), FLOOR_HEIGHT),
-                outline(4),
                 pos(0, height()),
                 anchor("botleft"),
                 area(),
                 body({ isStatic: true }),
                 color(81, 54, 30),
+                outline(4),
+                z(3),
+                "floor",
+            ]);
+
+            // Grass strip on top of floor
+            add([
+                rect(width(), 14),
+                pos(0, height() - FLOOR_HEIGHT),
+                anchor("botleft"),
+                color(82, 174, 50),
+                z(4),
+            ]);
+
+            // ── Player ───────────────────────────────────────────────────────
+            const player = add([
+                sprite("bean"),
+                pos(100, 40),
+                area(),
+                body(),
+                z(5),
             ]);
 
             function jump() {
+                if (gameOver) return;
                 player.jump(JUMP_FORCE);
             }
-
-            // jump when user press space
             onKeyPress("space", jump);
             onClick(jump);
 
+            // Die if player flies off the top of the screen. The threshold
+            // is generous (well beyond a single jump's ~140px rise) so a
+            // normal flap never counts as flying off-screen — it only
+            // catches genuinely spamming taps to climb off the top.
+            const topDeathY = -Math.max(300, height() * 0.6);
+            player.onUpdate(() => {
+                if (player.pos.y < topDeathY) triggerLose();
+            });
 
-            function spawnTree() {
+            // ── Score label ──────────────────────────────────────────────────
+            const scoreSize = fitText(0.09, 32, 56);
+            panel(width() / 2, 20 + scoreSize / 2 + 4, scoreSize * 1.6, scoreSize + 16);
+            const scoreLabel = add([
+                text(String(score), { size: scoreSize }),
+                pos(width() / 2, 20),
+                anchor("top"),
+                color(255, 255, 255),
+                z(20),
+            ]);
 
-                // add tree obj
+            // ── Difficulty helpers ───────────────────────────────────────────
+            // The run starts noticeably easier (wide gap, slow pipes, lots of
+            // spacing) than the original tuning, then ramps up over the first
+            // RAMP_LENGTH points to that original "normal" difficulty, and
+            // keeps slowly intensifying forever after that — instead of
+            // hitting full difficulty on pipe 1.
+            const RAMP_LENGTH  = 15;
+            const EASY_GAP     = 300;
+            const EASY_SPEED   = 200;
+            const EASY_SPAWN   = 2.1;
+            const NORMAL_SPAWN = 1.6;
+
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function difficultyT() { return Math.min(1, score / RAMP_LENGTH); }
+            function pastRamp()    { return Math.max(0, score - RAMP_LENGTH); }
+
+            function getGap()           { return lerp(EASY_GAP, GAP_HEIGHT, difficultyT()); }
+            function getSpeed()         { return lerp(EASY_SPEED, BASE_SPEED, difficultyT()) + Math.floor(pastRamp() / 5) * 25; }
+            function getSpawnInterval() { return Math.max(0.9, lerp(EASY_SPAWN, NORMAL_SPAWN, difficultyT()) - Math.floor(pastRamp() / 8) * 0.08); }
+
+            // ── Pipes ────────────────────────────────────────────────────────
+            const scoredPipes = new Set();
+
+            function spawnPipe() {
+                if (gameOver) return;
+
+                // Guaranteed gap: gapCenter defines the midpoint of the opening.
+                // Clamp gap/margins to the available height so short viewports
+                // (e.g. a phone in landscape with the address bar showing)
+                // never produce an inverted rand() range.
+                const availH  = height() - FLOOR_HEIGHT;
+                const gap     = Math.min(getGap(), availH * 0.5);
+                const margin  = Math.min(30, availH * 0.08);
+                const minGC   = gap / 2 + PIPE_CAP_H + margin;
+                const maxGC   = availH - gap / 2 - PIPE_CAP_H - margin;
+                const gapCenter = maxGC > minGC ? rand(minGC, maxGC) : availH / 2;
+                const topEdge   = gapCenter - gap / 2;  // y-coord where gap begins (top)
+                const botEdge   = gapCenter + gap / 2;  // y-coord where gap ends (bottom)
+                const spd       = getSpeed();
+
+                // Random horizontal stagger so top and bottom pipes don't align
+                const stagger = rand(80, 140) * (Math.random() > 0.5 ? 1 : -1);
+                const topX    = width();
+                const botX    = width() + stagger;
+
+                // Top pipe body
                 add([
-                    rect(96, rand(32, height()/2 - FLOOR_HEIGHT - 20)),
-                    area(),
+                    rect(PIPE_WIDTH, topEdge - PIPE_CAP_H),
+                    pos(topX, 0),
+                    anchor("topleft"),
+                    color(82, 174, 50),
                     outline(4),
-                    pos(width(), height() - FLOOR_HEIGHT),
-                    anchor("botleft"),
-                    color(80, 180, 255),
-                    move(LEFT, SPEED),
-                    "tree",
+                    area(),
+                    move(LEFT, spd),
+                    offscreen({ destroy: true }),
+                    z(2),
+                    "pipe",
                 ]);
 
-                add([ 
-                    rect(96, rand(32, height()/2 - FLOOR_HEIGHT- 20)),
-                    area(),
+                // Top pipe cap (wider, faces the gap)
+                add([
+                    rect(PIPE_WIDTH + 20, PIPE_CAP_H, { radius: 6 }),
+                    pos(topX - 10, topEdge - PIPE_CAP_H),
+                    anchor("topleft"),
+                    color(60, 150, 30),
                     outline(4),
-                    pos(width(), 0),
-                    anchor("topright"),
-                    color(80, 180, 255),
-                    move(LEFT, SPEED),
-                    "tree",
+                    area(),
+                    move(LEFT, spd),
+                    offscreen({ destroy: true }),
+                    z(2),
+                    "pipe",
                 ]);
 
-                // wait a random amount of time to spawn next tree
-                wait(rand(0.5, 1.5), spawnTree);
+                // Bottom pipe cap (wider, faces the gap)
+                add([
+                    rect(PIPE_WIDTH + 20, PIPE_CAP_H, { radius: 6 }),
+                    pos(botX - 10, botEdge),
+                    anchor("topleft"),
+                    color(60, 150, 30),
+                    outline(4),
+                    area(),
+                    move(LEFT, spd),
+                    offscreen({ destroy: true }),
+                    z(2),
+                    "pipe",
+                ]);
 
+                // Bottom pipe body — also tagged "pipe-bottom" for scoring
+                add([
+                    rect(PIPE_WIDTH, height() - FLOOR_HEIGHT - botEdge - PIPE_CAP_H),
+                    pos(botX, botEdge + PIPE_CAP_H),
+                    anchor("topleft"),
+                    color(82, 174, 50),
+                    outline(4),
+                    area(),
+                    move(LEFT, spd),
+                    offscreen({ destroy: true }),
+                    z(2),
+                    "pipe",
+                    "pipe-bottom",
+                ]);
+
+                wait(getSpawnInterval(), spawnPipe);
             }
+            spawnPipe();
 
-            // start spawning trees
-            spawnTree();
+            // ── Score counting (one point per pipe pair cleared) ─────────────
+            onUpdate(() => {
+                if (gameOver) return;
+                for (const pipe of get("pipe-bottom")) {
+                    if (!scoredPipes.has(pipe) && pipe.pos.x + PIPE_WIDTH < player.pos.x) {
+                        scoredPipes.add(pipe);
+                        score++;
+                        scoreLabel.text = String(score);
+                    }
+                }
+            });
 
-            // lose if player collides with any game obj with tag "tree"
-            player.onCollide("tree", () => {
-                // go to "lose" scene and pass the score
-                go("lose", score);
+            // ── Loss handling ────────────────────────────────────────────────
+            function triggerLose() {
+                if (gameOver) return;
+                gameOver = true;
+                const best = parseInt(localStorage.getItem("flappy-best")) || 0;
+                if (score > best) localStorage.setItem("flappy-best", String(score));
                 burp();
                 addKaboom(player.pos);
-            });
+                wait(0.8, () => go("lose", score));
+            }
 
-            // keep track of score
-            let score = 0;
-
-            const scoreLabel = add([
-                text(score),
-                pos(24, 24),
-            ]);
-
-            // increment score every frame
-            onUpdate(() => {
-                score++;
-                scoreLabel.text = score;
-            });
-
+            player.onCollide("pipe",  () => triggerLose());
+            player.onCollide("floor", () => triggerLose());
         });
+
+        // ─── Lose Scene ────────────────────────────────────────────────────────
 
         scene("lose", (score) => {
+            const best = parseInt(localStorage.getItem("flappy-best")) || 0;
+
+            addSky();
+
+            const titleSize  = fitText(0.1, 34, 60);
+            const statSize   = fitText(0.065, 22, 34);
+            const promptSize = fitText(0.04, 15, 22);
+
+            panel(width() / 2, height() / 2 + 10, Math.min(width() * 0.8, 340), 260);
 
             add([
-                sprite("bean-head"),
-                pos(width() / 2, height() / 2 - 80),
-                scale(1),
+                sprite("bean"),
+                pos(width() / 2, height() / 2 - 130),
+                scale(1.5),
                 anchor("center"),
+                z(10),
             ]);
 
-            // display score
             add([
-                text(score),
-                pos(width() / 2, height() / 2 + 80),
-                scale(2),
+                text("Game Over", { size: titleSize, width: width() * 0.9, align: "center" }),
+                pos(width() / 2, height() / 2 - 50),
                 anchor("center"),
+                color(255, 110, 110),
+                z(10),
             ]);
 
-            // go back to game with space is pressed
+            add([
+                text(`Score:  ${score}`, { size: statSize }),
+                pos(width() / 2, height() / 2 + 20),
+                anchor("center"),
+                color(255, 255, 255),
+                z(10),
+            ]);
+
+            add([
+                text(`Best:   ${best}`, { size: statSize }),
+                pos(width() / 2, height() / 2 + 72),
+                anchor("center"),
+                color(255, 220, 80),
+                z(10),
+            ]);
+
+            const prompt = add([
+                text("Press Space or Tap to Retry", { size: promptSize, width: width() * 0.85, align: "center" }),
+                pos(width() / 2, height() / 2 + 140),
+                anchor("center"),
+                color(210, 220, 240),
+                z(10),
+            ]);
+
+            loop(0.6, () => { prompt.hidden = !prompt.hidden; });
+
             onKeyPress("space", () => go("game"));
             onClick(() => go("game"));
-
         });
 
-        go("game");
-
+        go("start");
     </script>
 </body>
 
