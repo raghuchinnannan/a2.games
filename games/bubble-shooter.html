@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Bubble Shooter | a2.games</title>
   <link rel="icon" type="image/x-icon" href="/images/favicons/bubble.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { height: 100%; overscroll-behavior: none; }
 
     body {
       background: radial-gradient(ellipse at 50% 30%, #1a0533 0%, #07040f 100%);
@@ -14,8 +16,13 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      min-height: 100dvh;
       overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
+      padding: 10px;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      touch-action: none;
     }
 
     #gameContainer {
@@ -24,13 +31,24 @@
       overflow: hidden;
       box-shadow: 0 0 80px rgba(130,60,255,0.45), 0 24px 64px rgba(0,0,0,0.85);
       border: 1px solid rgba(255,255,255,0.07);
+      container-type: inline-size;
+      /* Scale to fit whichever dimension is tighter, preserving the 480x700 game aspect ratio */
+      width: min(480px, calc(100vw - 20px), calc((100vh - 20px) * 480 / 700));
+      width: min(480px, calc(100vw - 20px), calc((100dvh - 20px) * 480 / 700));
+      aspect-ratio: 480 / 700;
     }
 
-    #gameContainer canvas { display: block; cursor: crosshair; }
+    #gameContainer canvas {
+      display: block;
+      cursor: crosshair;
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none;
+    }
 
     #ui {
       position: absolute; top: 18px; left: 20px;
-      color: white; font-size: 17px; font-weight: 700;
+      color: white; font-size: clamp(12px, 3.6cqw, 17px); font-weight: 700;
       text-shadow: 0 2px 8px rgba(0,0,0,0.9);
       z-index: 10; pointer-events: none;
     }
@@ -38,7 +56,7 @@
 
     #levelDisplay {
       position: absolute; top: 18px; right: 20px;
-      color: white; font-size: 17px; font-weight: 700;
+      color: white; font-size: clamp(12px, 3.6cqw, 17px); font-weight: 700;
       text-shadow: 0 2px 8px rgba(0,0,0,0.9);
       z-index: 10; pointer-events: none;
     }
@@ -47,24 +65,26 @@
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       background: rgba(8, 4, 22, 0.97);
-      padding: 40px 48px; border-radius: 22px;
+      padding: clamp(22px, 8cqw, 40px) clamp(18px, 8cqw, 48px);
+      border-radius: 22px;
       text-align: center; color: white;
       z-index: 100;
       border: 1px solid rgba(167,139,250,0.35);
       box-shadow: 0 0 60px rgba(120,40,255,0.35);
-      min-width: 380px;
+      width: min(380px, 92%);
     }
     .modal h2 {
-      font-size: 32px; margin-bottom: 18px; font-weight: 800;
+      font-size: clamp(20px, 8cqw, 32px); margin-bottom: 18px; font-weight: 800;
       background: linear-gradient(90deg, #f472b6, #a78bfa, #60a5fa);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .modal p { color: #94a3b8; margin: 7px 0; font-size: 15px; line-height: 1.7; }
-    .modal .big { font-size: 22px; color: #e2e8f0; margin: 14px 0; }
+    .modal p { color: #94a3b8; margin: 7px 0; font-size: clamp(12px, 3.4cqw, 15px); line-height: 1.7; }
+    .modal .big { font-size: clamp(16px, 4.6cqw, 22px); color: #e2e8f0; margin: 14px 0; }
     .modal button {
       background: linear-gradient(135deg, #7c3aed, #3b82f6);
       color: white; border: none;
-      padding: 13px 38px; font-size: 16px;
+      padding: clamp(10px, 3cqw, 13px) clamp(24px, 8cqw, 38px);
+      font-size: clamp(13px, 3.4cqw, 16px);
       border-radius: 12px; cursor: pointer; margin: 10px;
       font-weight: 700; letter-spacing: 0.5px;
       transition: transform 0.15s, box-shadow 0.2s;
@@ -78,16 +98,19 @@
     #nextPanel {
       position: absolute; bottom: 20px; right: 20px;
       background: rgba(255,255,255,0.05);
-      padding: 12px 16px; border-radius: 14px;
+      padding: 10px 14px; border-radius: 14px;
       border: 1px solid rgba(255,255,255,0.1);
       text-align: center; z-index: 10;
     }
     #nextPanel p {
-      color: #64748b; font-size: 11px; font-weight: 700;
+      color: #64748b; font-size: clamp(9px, 2.4cqw, 11px); font-weight: 700;
       letter-spacing: 1.5px; text-transform: uppercase;
       margin-bottom: 8px;
     }
-    #nextBubbleCanvas { display: block; margin: 0 auto; }
+    #nextBubbleCanvas {
+      display: block; margin: 0 auto;
+      width: clamp(30px, 9cqw, 46px); height: clamp(30px, 9cqw, 46px);
+    }
   </style>
 </head>
 <body>
