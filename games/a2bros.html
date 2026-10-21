@@ -1,38 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>A2 Bros - Play Free Online | a2.games</title>
     <meta name="description" content="Classic platform adventure awaits! Play free in your browser on a2.games, no download.">
     <link rel="canonical" href="https://a2.games/games/a2bros">
-    <script src="https://unpkg.com/kaboom@3000.0.1/dist/kaboom.js"></script>
+
+    <style>
+        .tpad{position:fixed;bottom:16px;display:none;gap:12px;z-index:10;user-select:none;-webkit-user-select:none}
+        .tpad button{width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.35);color:#fff;font-size:26px;touch-action:none}
+        @media (pointer: coarse){.tpad{display:flex}}
+    </style>
 </head>
 
 <body>
     <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">A2 Bros</h1>
+    <div class="tpad" style="left:16px"><button data-key="ArrowLeft" aria-label="Left">&#9664;</button><button data-key="ArrowRight" aria-label="Right">&#9654;</button></div>
+    <div class="tpad" style="right:16px"><button data-key="ArrowDown" aria-label="Down">&#9660;</button><button data-key=" " aria-label="Jump">&#9650;</button></div>
+    <script>
+        // On-screen touch buttons: forward as keyboard events to Kaboom's canvas
+        document.querySelectorAll('.tpad button').forEach(b => {
+            const send = t => { const c = document.querySelector('canvas'); if (c) c.dispatchEvent(new KeyboardEvent(t, { key: b.dataset.key, bubbles: true })); };
+            b.addEventListener('pointerdown', e => { e.preventDefault(); send('keydown'); });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => b.addEventListener(t, () => send('keyup')));
+        });
+    </script>
     <script type="module">
+        import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
 
         kaboom({
             background: [141, 183, 255],
         })
 
         // load assets
-        loadSprite("bigyoshi", "https://kaboomjs.com/examples/sprites/YOSHI.png")
-        loadSprite("bean", "https://zerohero.pages.dev/sprites/bean.png")
-        loadSprite("bag", "https://kaboomjs.com/sprites/bag.png")
-        loadSprite("ghosty", "https://kaboomjs.com/sprites/ghosty.png")
-        loadSprite("spike", "https://kaboomjs.com/sprites/spike.png")
-        loadSprite("grass", "https://kaboomjs.com/sprites/grass.png")
-        loadSprite("steel", "https://kaboomjs.com/sprites/steel.png")
-        loadSprite("prize", "https://kaboomjs.com/sprites/jumpy.png")
-        loadSprite("apple", "https://kaboomjs.com/sprites/apple.png")
-        loadSprite("portal", "https://kaboomjs.com/sprites/portal.png")
-        loadSprite("coin", "https://kaboomjs.com/sprites/coin.png")
-        loadSound("coin", "https://kaboomjs.com/examples/sounds/score.mp3")
-        loadSound("powerup", "https://kaboomjs.com/examples/sounds/powerup.mp3")
-        loadSound("blip", "https://kaboomjs.com/examples/sounds/blip.mp3")
-        loadSound("hit", "https://kaboomjs.com/examples/sounds/hit.mp3")
-        loadSound("portal", "https://kaboomjs.com/examples/sounds/portal.mp3")
+        loadSprite("bean", "/assets/a2bros/bean.png")
+        loadSprite("bag", "/assets/a2bros/bag.png")
+        loadSprite("ghosty", "/assets/a2bros/ghosty.png")
+        loadSprite("spike", "/assets/a2bros/spike.png")
+        loadSprite("grass", "/assets/a2bros/grass.png")
+        loadSprite("steel", "/assets/a2bros/steel.png")
+        loadSprite("prize", "/assets/a2bros/jumpy.png")
+        loadSprite("apple", "/assets/a2bros/apple.png")
+        loadSprite("portal", "/assets/a2bros/portal.png")
+        loadSprite("coin", "/assets/a2bros/coin.png")
+        loadSound("coin", "/assets/a2bros/score.mp3")
+        loadSound("powerup", "/assets/a2bros/powerup.mp3")
+        loadSound("blip", "/assets/a2bros/blip.mp3")
+        loadSound("hit", "/assets/a2bros/hit.mp3")
+        loadSound("portal", "/assets/a2bros/portal.mp3")
 
         setGravity(3200)
 
@@ -415,6 +431,7 @@
                 text("You Lose"),
             ])
             onKeyPress(() => go("game"))
+            onClick(() => go("game"))
         })
 
         scene("win", () => {
@@ -423,6 +440,7 @@
                 addConfetti({ pos: (width()/2, height() / 2 + 80) }),
             ])
             onKeyPress(() => go("game"))
+            onClick(() => go("game"))
         })
 
         // Confetti code starts
