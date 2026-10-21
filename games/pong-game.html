@@ -23,6 +23,11 @@
             background-color: #000;
             border: 1px solid #fff;
             display: block;
+            max-width: calc(100vw - 4px);
+            max-height: calc(100vh - 4px);
+            width: auto;
+            height: auto;
+            touch-action: none;
         }
         #menuCard {
             position: absolute;
@@ -82,6 +87,18 @@
     <script>
         const canvas = document.getElementById('pongCanvas');
         const ctx = canvas.getContext('2d');
+        // Touch: drag on the left half moves the left paddle, right half the right paddle
+        function touchPaddles(e) {
+            e.preventDefault();
+            const r = canvas.getBoundingClientRect();
+            for (const t of e.touches) {
+                const y = (t.clientY - r.top) * canvas.height / r.height - paddleHeight / 2;
+                const cy = Math.max(0, Math.min(canvas.height - paddleHeight, y));
+                if (t.clientX - r.left < r.width / 2) paddle1Y = cy; else paddle2Y = cy;
+            }
+        }
+        canvas.addEventListener('touchstart', touchPaddles, { passive: false });
+        canvas.addEventListener('touchmove', touchPaddles, { passive: false });
         const menuCard = document.getElementById('menuCard');
         const startBtn = document.getElementById('startBtn');
 
