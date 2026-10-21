@@ -122,6 +122,7 @@
 </head>
 
 <body>
+    <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Number Shooter</h1>
     <div id="main">
         <div id="panel">
             <div id="ptop">
@@ -177,7 +178,7 @@
                     document.querySelector("#timerval").textContent = timer;
                 } else {
                     clearInterval(timerinterval);
-                    document.querySelector("#pbtm").innerHTML = `<h1 class="game-over">Game Over! Final Score: ${score}</h1>
+                    document.querySelector("#pbtm").innerHTML = `<h2 class="game-over">Game Over! Final Score: ${score}</h2>
                     <div class="control-div"><button onClick="window.location.reload();">Restart Game</button><br><button onclick="window.location.href='https://a2.games/'">Back to Home</button></div>`;
                     gameover.play();
                 }
