@@ -275,6 +275,68 @@
                 flex-basis: 100%;
             }
         }
+
+        /* ---- Responsive full-viewport layout (fits 1280x720 landscape and phone portrait) ---- */
+        html, body { height: 100%; }
+        body {
+            min-height: 0;
+            height: 100vh;
+            height: 100dvh;
+            padding: 0;
+            overflow: hidden;
+        }
+        .game-shell {
+            width: 100%;
+            max-width: 1700px;
+            height: 100%;
+            border-radius: 0;
+            padding: clamp(8px, 1.6vmin, 16px);
+            gap: clamp(6px, 1.4vmin, 14px);
+        }
+        .hud { flex: 0 0 auto; flex-wrap: nowrap; gap: clamp(6px, 1.2vmin, 12px); }
+        .hud .badge {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: clamp(6px, 1.2vmin, 12px) 10px;
+            font-size: clamp(13px, 1.9vmin, 16px);
+            white-space: nowrap;
+        }
+        .stage {
+            flex: 1 1 auto;
+            min-height: 0;
+            aspect-ratio: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: none;
+            border-radius: 0;
+            overflow: visible;
+        }
+        .playfield {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas { width: 100%; height: 100%; touch-action: none; }
+        .overlay { gap: clamp(8px, 2vmin, 20px); padding: clamp(14px, 3vmin, 32px) clamp(14px, 3vmin, 26px); justify-content: safe center; }
+        .overlay p { font-size: clamp(13px, 1.9vmin, 15px); max-width: 460px; }
+        .overlay li { font-size: clamp(12px, 1.8vmin, 14px); }
+        .stat-card { padding: clamp(8px, 1.4vmin, 14px) 16px; }
+        .mobile-controls { flex: 0 0 auto; margin-top: 0; }
+        .control-hint { flex: 0 0 auto; }
+        @media (pointer: coarse) {
+            .mobile-controls { display: flex; }
+            .control-hint { display: block; }
+            .control-btn { display: inline-block; }
+        }
+        @media (max-height: 560px) {
+            .overlay ul, .control-hint { display: none !important; }
+            .control-btn { width: 54px; height: 54px; font-size: 20px; }
+        }
     </style>
 </head>
 
@@ -285,7 +347,8 @@
             <div class="badge">Best <span id="bestDisplay">0</span></div>
             <div class="badge">Lives <span id="livesDisplay">3</span></div>
         </div>
-        <div class="stage">
+        <div class="stage" id="stage">
+          <div class="playfield" id="playfield">
             <canvas id="gameCanvas" width="480" height="640"></canvas>
 
             <div class="overlay" id="overlay">
@@ -295,7 +358,7 @@
 
                 <ul>
                     <li>🕹️ Move with <strong>←</strong> <strong>→</strong> or <strong>A</strong>/<strong>D</strong></li>
-                    <li>📱 On touch devices use the glowing buttons below</li>
+                    <li>📱 On touch: hold or drag anywhere on the playfield, or use the glowing buttons</li>
                     <li>💥 Colliding with a comet costs one life</li>
                     <li>⚡ Collecting orbs back-to-back grants bonus points</li>
                 </ul>
@@ -307,18 +370,30 @@
 
                 <button id="startBtn">Start Run</button>
             </div>
+          </div>
         </div>
 
         <div class="mobile-controls">
             <button class="control-btn" id="leftControl" aria-label="Move left">◀</button>
             <button class="control-btn" id="rightControl" aria-label="Move right">▶</button>
         </div>
-        <p class="control-hint">Tap the glowing buttons to steer.</p>
+        <p class="control-hint">Hold or drag on the playfield (or use the buttons) to steer.</p>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const stageEl = document.getElementById('stage');
+        const playfieldEl = document.getElementById('playfield');
+
+        // Logical playfield: fixed height of 640 units; width adapts to the
+        // window's aspect ratio (clamped, letterboxed beyond the limits).
+        // All game logic uses view.w / view.h; the canvas backing store is
+        // sized in device pixels for crisp rendering on high-DPI screens.
+        const LOGICAL_H = 640;
+        const ASPECT_MIN = 0.45;  // tall phones
+        const ASPECT_MAX = 1.6;   // wide desktop / Poki landscape player
+        const view = { w: 480, h: LOGICAL_H, scale: 1 };
 
         const overlay = document.getElementById('overlay');
         const startBtn = document.getElementById('startBtn');
@@ -337,21 +412,26 @@
             meteorSpeed: [100, 180],
             maxLives: 3,
             comboWindow: 2.4,
-            speedRamp: 0.012
+            speedRamp: 0.012,
+            // Ship top speed as a fraction of playfield width per second.
+            // 0.62 * 480 = ~298 px/s vs ~157 px/s effective before (~1.9x).
+            shipSpeedPerWidth: 0.62,
+            // Time constant (s) for easing velocity toward the target.
+            shipEase: 0.075
         };
 
         const player = {
-            x: canvas.width / 2,
-            y: canvas.height - 70,
+            x: view.w / 2,
+            y: view.h - 70,
             radius: 20,
-            vx: 0,
-            maxSpeed: 260,
-            acceleration: 600
+            vx: 0
         };
 
         const input = {
             left: false,
-            right: false
+            right: false,
+            pointerActive: false,
+            pointerX: 0
         };
 
         function loadNumber(key, fallback) {
@@ -403,7 +483,7 @@
             state.difficultyTimer = 0;
             spawnCounters.orb = 0;
             spawnCounters.meteor = 0;
-            player.x = canvas.width / 2;
+            player.x = view.w / 2;
             player.vx = 0;
 
             updateHud();
@@ -435,7 +515,7 @@
             const difficultyFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
             const radius = 14 + Math.random() * 6;
             entities.orbs.push({
-                x: Math.random() * (canvas.width - radius * 2) + radius,
+                x: Math.random() * (view.w - radius * 2) + radius,
                 y: -radius,
                 radius,
                 speed: randomBetween(CONFIG.orbSpeed[0], CONFIG.orbSpeed[1]) * difficultyFactor,
@@ -448,7 +528,7 @@
             const difficultyFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
             const radius = 18 + Math.random() * 14;
             entities.meteors.push({
-                x: Math.random() * (canvas.width - radius * 2) + radius,
+                x: Math.random() * (view.w - radius * 2) + radius,
                 y: -radius * 2,
                 radius,
                 speed: randomBetween(CONFIG.meteorSpeed[0], CONFIG.meteorSpeed[1]) * difficultyFactor,
@@ -458,12 +538,25 @@
         }
 
         function updatePlayer(dt) {
-            const target = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-            player.vx += target * player.acceleration * dt;
-            player.vx *= target === 0 ? 0.82 : 0.94;
-            player.vx = clamp(player.vx, -player.maxSpeed, player.maxSpeed);
+            const maxSpeed = CONFIG.shipSpeedPerWidth * view.w;
+            let targetVx;
+            if (input.pointerActive) {
+                // Steer toward the finger/cursor; slows down smoothly as it arrives.
+                const dx = input.pointerX - player.x;
+                targetVx = clamp(dx * 9, -maxSpeed, maxSpeed);
+                if (Math.abs(dx) < 2) targetVx = 0;
+            } else {
+                const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+                targetVx = dir * maxSpeed;
+            }
+            // Frame-rate independent exponential easing toward the target velocity.
+            const k = 1 - Math.exp(-dt / CONFIG.shipEase);
+            player.vx += (targetVx - player.vx) * k;
             player.x += player.vx * dt;
-            player.x = clamp(player.x, player.radius + 8, canvas.width - player.radius - 8);
+            const minX = player.radius + 8;
+            const maxX = view.w - player.radius - 8;
+            if (player.x <= minX || player.x >= maxX) player.vx = 0;
+            player.x = clamp(player.x, minX, maxX);
         }
 
         function updateEntities(dt) {
@@ -472,8 +565,9 @@
             spawnCounters.meteor += dt;
 
             const levelFactor = 1 + state.difficultyTimer * CONFIG.speedRamp;
-            const orbInterval = Math.max(0.35, CONFIG.baseOrbRate / levelFactor);
-            const meteorInterval = Math.max(0.6, CONFIG.baseMeteorRate / levelFactor);
+            const widthFactor = view.w / 480; // keep density similar on wider playfields
+            const orbInterval = Math.max(0.35, CONFIG.baseOrbRate / levelFactor) / widthFactor;
+            const meteorInterval = Math.max(0.6, CONFIG.baseMeteorRate / levelFactor) / widthFactor;
 
             if (spawnCounters.orb >= orbInterval) {
                 spawnOrb();
@@ -495,8 +589,8 @@
                 meteor.rotation += meteor.spin * dt;
             });
 
-            entities.orbs = entities.orbs.filter((orb) => orb.y - orb.radius < canvas.height + 20);
-            entities.meteors = entities.meteors.filter((meteor) => meteor.y - meteor.radius < canvas.height + 50);
+            entities.orbs = entities.orbs.filter((orb) => orb.y - orb.radius < view.h + 20);
+            entities.meteors = entities.meteors.filter((meteor) => meteor.y - meteor.radius < view.h + 50);
         }
 
         function checkCollisions() {
@@ -544,7 +638,8 @@
         }
 
         function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(view.scale, 0, 0, view.scale, 0, 0);
+            ctx.clearRect(0, 0, view.w, view.h);
             drawBackdrop();
             drawPlayer();
             entities.orbs.forEach(drawOrb);
@@ -553,17 +648,17 @@
         }
 
         function drawBackdrop() {
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const gradient = ctx.createLinearGradient(0, 0, 0, view.h);
             gradient.addColorStop(0, 'rgba(45, 65, 130, 0.25)');
             gradient.addColorStop(1, 'rgba(8, 12, 28, 0.6)');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, view.w, view.h);
 
             ctx.save();
             ctx.globalCompositeOperation = 'lighter';
             for (let i = 0; i < 24; i++) {
-                const x = (i * 17 + performance.now() * 0.01) % canvas.width;
-                const y = (i * 53 + performance.now() * 0.04) % canvas.height;
+                const x = (i * 17 + performance.now() * 0.01) % view.w;
+                const y = (i * 53 + performance.now() * 0.04) % view.h;
                 const radius = (Math.sin(performance.now() * 0.001 + i) + 1.5) * 1.2;
                 const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 5);
                 glow.addColorStop(0, 'rgba(108, 156, 255, 0.35)');
@@ -587,7 +682,7 @@
             ctx.arc(0, 0, player.radius + 18, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.rotate(player.vx * 0.0009);
+            ctx.rotate((player.vx / (CONFIG.shipSpeedPerWidth * view.w)) * 0.25);
             ctx.fillStyle = '#8fb6ff';
             ctx.beginPath();
             ctx.moveTo(0, -player.radius);
@@ -653,7 +748,7 @@
             ctx.fillStyle = '#6fa1ff';
             ctx.font = '700 24px Poppins, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`Combo x${Math.round(state.combo)}`, canvas.width / 2, 38);
+            ctx.fillText(`Combo x${Math.round(state.combo)}`, view.w / 2, 38);
             ctx.restore();
         }
 
@@ -695,16 +790,65 @@
         }
 
         function resizeCanvas() {
-            const ratio = canvas.width / canvas.height;
-            const wrapper = canvas.parentElement;
-            const bounds = wrapper.getBoundingClientRect();
-            const width = bounds.width;
-            const height = width / ratio;
-            canvas.style.height = `${height}px`;
+            const bounds = stageEl.getBoundingClientRect();
+            const availW = Math.max(1, bounds.width);
+            const availH = Math.max(1, bounds.height);
+            const aspect = clamp(availW / availH, ASPECT_MIN, ASPECT_MAX);
+            // Largest rect with that aspect that fits the stage (letterbox).
+            let cssW = availW;
+            let cssH = cssW / aspect;
+            if (cssH > availH) {
+                cssH = availH;
+                cssW = cssH * aspect;
+            }
+            cssW = Math.floor(cssW);
+            cssH = Math.floor(cssH);
+            playfieldEl.style.width = `${cssW}px`;
+            playfieldEl.style.height = `${cssH}px`;
+
+            const oldW = view.w;
+            view.h = LOGICAL_H;
+            view.w = Math.round(LOGICAL_H * (cssW / cssH));
+            const dpr = Math.min(window.devicePixelRatio || 1, 3);
+            canvas.width = Math.round(cssW * dpr);
+            canvas.height = Math.round(cssH * dpr);
+            view.scale = canvas.width / view.w;
+
+            // Keep the ship and objects in proportion when the width changes.
+            if (oldW && oldW !== view.w) {
+                const f = view.w / oldW;
+                player.x *= f;
+                entities.orbs.forEach((o) => { o.x *= f; });
+                entities.meteors.forEach((m) => { m.x *= f; });
+            }
+            player.y = view.h - 70;
+            if (!state.running) render();
         }
 
-        resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150));
+        if (window.ResizeObserver) new ResizeObserver(() => resizeCanvas()).observe(stageEl);
+
+        // Hold / drag anywhere on the playfield to steer toward the pointer.
+        function pointerToLogicalX(event) {
+            const rect = canvas.getBoundingClientRect();
+            return ((event.clientX - rect.left) / rect.width) * view.w;
+        }
+        canvas.addEventListener('pointerdown', (event) => {
+            if (!state.running) return;
+            event.preventDefault();
+            input.pointerActive = true;
+            input.pointerX = pointerToLogicalX(event);
+            canvas.setPointerCapture(event.pointerId);
+        });
+        canvas.addEventListener('pointermove', (event) => {
+            if (!input.pointerActive) return;
+            input.pointerX = pointerToLogicalX(event);
+        });
+        const endPointer = () => { input.pointerActive = false; };
+        canvas.addEventListener('pointerup', endPointer);
+        canvas.addEventListener('pointercancel', endPointer);
+        canvas.addEventListener('lostpointercapture', endPointer);
 
         document.addEventListener('keydown', (event) => {
             if (event.code === 'Space' && !state.running) {
@@ -763,6 +907,7 @@
 
         startBtn.addEventListener('click', startGame);
 
+        resizeCanvas();
         updateHud();
         bestDisplay.textContent = state.best.toString();
         bestComboDisplay.textContent = `x${state.bestCombo}`;
