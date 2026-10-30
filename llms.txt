@@ -1,0 +1,12 @@
+# a2.games
+
+> Lightweight, open-source browser games focused on accessibility, instant play and minimal friction. No installs or sign-ups.
+
+## Links
+
+- [Home](https://a2.games/): Lightweight, open-source browser games focused on accessibility, instant play and minimal friction. No installs or sign-ups.
+- [Sitemap](https://a2.games/sitemap.xml): All public pages
+
+## About
+
+a2.games is part of the A2 Ventures portfolio (https://a2ventures.group), an independent venture studio run by Raghu Chinnannan.

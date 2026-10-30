@@ -1,0 +1,19 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "a2.games",
+    "identifier": "did:web:a2.games"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:a2.games:doc:llms",
+      "displayName": "a2.games overview for LLMs",
+      "type": "text/markdown",
+      "url": "https://a2.games/llms.txt",
+      "representativeQueries": [
+        "free open source browser games",
+        "play instant games online without install"
+      ]
+    }
+  ]
+}
