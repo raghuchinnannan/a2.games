@@ -61,6 +61,7 @@ const GameRenderer = {
           ${platformTagsHTML}
         </div>
         <a href="${game.url}" class="play-now">Play Now</a>
+        ${game.guide ? `<a href="${game.guide}" class="game-guide-link" style="display:block;text-align:center;margin-top:8px;font-size:.85rem">How to play &amp; tips</a>` : ''}
       </div>
     `;
 
